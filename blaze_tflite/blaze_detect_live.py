@@ -102,9 +102,17 @@ ap.add_argument('-w', '--withoutview', default=False, action='store_true', help=
 ap.add_argument('-z', '--profilelog' , default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
 ap.add_argument('-Z', '--profileview', default=False, action='store_true', help="Enable Profile View (Latency). Default is off")
 ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
+ap.add_argument('-d', '--delegate', default="/usr/lib/libethosu_delegate.so", help="delegate path")
 
 args = ap.parse_args()  
   
+if(args.delegate):
+    ext_delegate = [tflite.load_delegate(args.delegate)]
+    interpreter = tflite.Interpreter(model_path=args.model_file, experimental_delegates=ext_delegate)
+else:
+    interpreter = tflite.Interpreter(model_path=args.model_file)
+interpreter.allocate_tensors()
+
 print('Command line options:')
 print(' --input       : ', args.input)
 print(' --image       : ', args.image)
