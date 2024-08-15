@@ -162,20 +162,20 @@ if args.blaze == "hand":
    blaze_detector_type = "blazepalm"
    blaze_landmark_type = "blazehandlandmark"
    blaze_title = "BlazeHandLandmark"
-   default_detector_model='models/palm_detection_lite.tflite'
-   default_landmark_model='models/hand_landmark_lite.tflite'
+   default_detector_model='models\\palm_detection_lite.tflite'
+   default_landmark_model='models\\hand_landmark_lite.tflite'
 elif args.blaze == "face":
    blaze_detector_type = "blazeface"
    blaze_landmark_type = "blazefacelandmark"
    blaze_title = "BlazeFaceLandmark"
-   default_detector_model='models/face_detection_short_range.tflite'
-   default_landmark_model='models/face_landmark.tflite'
+   default_detector_model='models\\blaze_face_short_range.tflite'
+   default_landmark_model='models\\face_landmark_v0_07.tflite'
 elif args.blaze == "pose":
    blaze_detector_type = "blazepose"
    blaze_landmark_type = "blazeposelandmark"
    blaze_title = "BlazePoseLandmark"
-   default_detector_model='models/pose_detection.tflite'
-   default_landmark_model='models/pose_landmark_full.tflite'
+   default_detector_model='models\\pose_detection.tflite'
+   default_landmark_model='models\\pose_landmark_full.tflite'
 else:
    print("[ERROR] Invalid Blaze application : ",args.blaze,".  MUST be one of hand,face,pose.")
 

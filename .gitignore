@@ -5,6 +5,7 @@ blaze_pytorch/__pycache__/
 blaze_vitisai/__pycache__/
 # models
 blaze_tflite/models/*.tflite
+blaze_tflite/models/quantized/*.tflite
 blaze_pytorch/models/*.pth
 blaze_vitisai/models/blaze*/*/*
-
+blaze_tflite/vela/csv/*.csv
