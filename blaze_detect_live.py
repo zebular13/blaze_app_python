@@ -56,6 +56,7 @@ import sys
 from datetime import datetime
 import plotly.graph_objects as go
 
+
 import getpass
 import socket
 user = getpass.getuser()
@@ -196,18 +197,9 @@ print(' --fps         : ', args.fps)
 
 
 blaze_pipelines = [
-#   { "blaze": "hand", "pipeline": "tfl_hand_v0_07"       , "model1": "blaze_tflite/models/palm_detection_v0_07.tflite",             "model2": "blaze_tflite/models/hand_landmark_v0_07.tflite" },
-    { "blaze": "hand", "pipeline": "tfl_hand_v0_07"       , "model1": "blaze_tflite/models/palm_detection_without_custom_op.tflite", "model2": "blaze_tflite/models/hand_landmark_v0_07.tflite" },
-    { "blaze": "hand", "pipeline": "tfl_hand_v0_10_lite"  , "model1": "blaze_tflite/models/palm_detection_lite.tflite",              "model2": "blaze_tflite/models/hand_landmark_lite.tflite" },
-    { "blaze": "hand", "pipeline": "tfl_hand_v0_10_full"  , "model1": "blaze_tflite/models/palm_detection_full.tflite",              "model2": "blaze_tflite/models/hand_landmark_full.tflite" },
-    { "blaze": "hand", "pipeline": "pyt_hand_v0_07"       , "model1": "blaze_pytorch/models/blazepalm.pth",                          "model2": "blaze_pytorch/models/blazehand_landmark.pth" },
-    { "blaze": "hand", "pipeline": "vai_hand_v0_07"       , "model1": "blaze_vitisai/models/blazepalm/"+dpu_arch+"/blazepalm.xmodel","model2": "blaze_vitisai/models/blazehandlandmark/"+dpu_arch+"/blazehandlandmark.xmodel" },
-    { "blaze": "hand", "pipeline": "hai_hand_v0_07_2c"    , "model1": "blaze_hailo/models/palm_detection_v0_07_2c.hef",              "model2": "blaze_hailo/models/hand_landmark_v0_07.hef" },
-    { "blaze": "hand", "pipeline": "hai_hand_v0_07_1c"    , "model1": "blaze_hailo/models/palm_detection_v0_07_1c.hef",              "model2": "blaze_hailo/models/hand_landmark_v0_07.hef" },
-    { "blaze": "hand", "pipeline": "hai_hand_v0_10_lite"  , "model1": "blaze_hailo/models/palm_detection_lite.hef",                  "model2": "blaze_hailo/models/hand_landmark_lite.hef" },
-    { "blaze": "hand", "pipeline": "hai_hand_v0_10_full"  , "model1": "blaze_hailo/models/palm_detection_full.hef",                  "model2": "blaze_hailo/models/hand_landmark_full.hef" },
-    { "blaze": "face", "pipeline": "tfl_face_v0_07_front" , "model1": "blaze_tflite/models/face_detection_front_v0_07.tflite",       "model2": "blaze_tflite/models/face_landmark_v0_07.tflite" },
-    { "blaze": "face", "pipeline": "tfl_face_v0_07_back"  , "model1": "blaze_tflite/models/face_detection_back_v0_07.tflite",        "model2": "blaze_tflite/models/face_landmark_v0_07.tflite" },
+    { "blaze": "hand", "pipeline": "tfl_hand_v0_07"       , "model1": "blaze_tflite/vela/palm_detection_builtin_256_integer_quant_vela.tflite",             "model2": "/home/root/blaze_app_python/blaze_tflite/vela/hand_landmark_3d_256_integer_quant_vela.tflite" },
+    { "blaze": "face", "pipeline": "tfl_face_v0_07_front" , "model1": "blaze_tflite/vela/face_detection_front_128_full_integer_quant_vela.tflite",          "model2": "blaze_tflite/vela/face_landmark_192_full_integer_quant_vela.tflite" },
+    { "blaze": "face", "pipeline": "tfl_face_v0_07_back"  , "model1": "blaze_tflite/vela/face_detection_back_256x256_full_integer_quant_vela.tflite",        "model2": "blaze_tflite/vela/face_landmark_192_full_integer_quant_vela.tflite" },
     { "blaze": "face", "pipeline": "tfl_face_v0_10_short" , "model1": "blaze_tflite/models/face_detection_short_range.tflite",       "model2": "blaze_tflite/models/face_landmark.tflite" },
     { "blaze": "face", "pipeline": "tfl_face_v0_10_full"  , "model1": "blaze_tflite/models/face_detection_full_range.tflite",        "model2": "blaze_tflite/models/face_landmark.tflite" },
     { "blaze": "face", "pipeline": "tfl_face_v0_10_sparse", "model1": "blaze_tflite/models/face_detection_full_range_sparse.tflite", "model2": "blaze_tflite/models/face_landmark.tflite" },
