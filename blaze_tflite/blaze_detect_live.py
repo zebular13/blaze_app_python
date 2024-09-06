@@ -47,14 +47,7 @@ import re
 import sys
 
 #import tensorflow as tf
-bUseTfliteRuntime = False
-try:
-    import tensorflow as tf
-    import tensorflow.lite
-
-except:
-    from tflite_runtime.interpreter import Interpreter
-    bUseTfliteRuntime = True
+import tflite_runtime.interpreter as tflite
 
 from datetime import datetime
 import plotly.graph_objects as go
@@ -112,16 +105,16 @@ ap.add_argument('-w', '--withoutview', default=False, action='store_true', help=
 ap.add_argument('-z', '--profilelog' , default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
 ap.add_argument('-Z', '--profileview', default=False, action='store_true', help="Enable Profile View (Latency). Default is off")
 ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
-ap.add_argument('-x', '--delegate', default="/usr/lib/libethosu_delegate.so", help="delegate path")
+#ap.add_argument('-x', '--delegate', default="/usr/lib/libethosu_delegate.so", help="delegate path")
 
 args = ap.parse_args()  
   
-if(args.delegate):
-    ext_delegate = [tf.lite.load_delegate(args.delegate)]
-    interpreter = tf.lite.Interpreter(model_path=args.model_file, experimental_delegates=ext_delegate)
-else:
-    interpreter = tf.lite.Interpreter(model_path=args.model_file)
-interpreter.allocate_tensors()
+# if(args.delegate):
+#     ext_delegate = [tflite.load_delegate(args.delegate)]
+#     interpreter = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
+# else:
+#     interpreter = tflite.Interpreter(model_path)
+# interpreter.allocate_tensors()
 
 print('Command line options:')
 print(' --input       : ', args.input)

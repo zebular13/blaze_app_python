@@ -3,13 +3,7 @@ import numpy as np
 from blazebase import BlazeDetectorBase
 
 #import tensorflow as tf
-bUseTfliteRuntime = False
-try:
-    import tensorflow as tf
-    import tensorflow.lite
-except:
-    from tflite_runtime.interpreter import Interpreter
-    bUseTfliteRuntime = True
+import tflite_runtime.interpreter as tflite
 
 from timeit import default_timer as timer
 
@@ -25,11 +19,9 @@ class BlazeDetector(BlazeDetectorBase):
 
         if self.DEBUG:
            print("[BlazeDetector.load_model] Model File : ",model_path)
-           
-        if bUseTfliteRuntime:
-            self.interp_detector = Interpreter(model_path)
-        else:
-            self.interp_detector = tf.lite.Interpreter(model_path)
+        
+        ext_delegate = [tflite.load_delegate("/usr/lib/libethosu_delegate.so")]  
+        self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
         self.interp_detector.allocate_tensors()
 
         # reading tflite model paramteres
