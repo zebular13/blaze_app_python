@@ -46,6 +46,16 @@ import subprocess
 import re
 import sys
 
+#import tensorflow as tf
+bUseTfliteRuntime = False
+try:
+    import tensorflow as tf
+    import tensorflow.lite
+
+except:
+    from tflite_runtime.interpreter import Interpreter
+    bUseTfliteRuntime = True
+
 from datetime import datetime
 import plotly.graph_objects as go
 
@@ -102,15 +112,15 @@ ap.add_argument('-w', '--withoutview', default=False, action='store_true', help=
 ap.add_argument('-z', '--profilelog' , default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
 ap.add_argument('-Z', '--profileview', default=False, action='store_true', help="Enable Profile View (Latency). Default is off")
 ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
-ap.add_argument('-d', '--delegate', default="/usr/lib/libethosu_delegate.so", help="delegate path")
+ap.add_argument('-x', '--delegate', default="/usr/lib/libethosu_delegate.so", help="delegate path")
 
 args = ap.parse_args()  
   
 if(args.delegate):
-    ext_delegate = [tflite.load_delegate(args.delegate)]
-    interpreter = tflite.Interpreter(model_path=args.model_file, experimental_delegates=ext_delegate)
+    ext_delegate = [tf.lite.load_delegate(args.delegate)]
+    interpreter = tf.lite.Interpreter(model_path=args.model_file, experimental_delegates=ext_delegate)
 else:
-    interpreter = tflite.Interpreter(model_path=args.model_file)
+    interpreter = tf.lite.Interpreter(model_path=args.model_file)
 interpreter.allocate_tensors()
 
 print('Command line options:')
@@ -170,14 +180,14 @@ if args.blaze == "hand":
    blaze_detector_type = "blazepalm"
    blaze_landmark_type = "blazehandlandmark"
    blaze_title = "BlazeHandLandmark"
-   default_detector_model='models\\palm_detection_lite.tflite'
-   default_landmark_model='models\\hand_landmark_lite.tflite'
+   default_detector_model='vela\\hand_landmark_3d_256_integer_quant_vela.tflite'
+   default_landmark_model='vela\\palm_detection_builtin_256_integer_quant_vela.tflite'
 elif args.blaze == "face":
    blaze_detector_type = "blazeface"
    blaze_landmark_type = "blazefacelandmark"
    blaze_title = "BlazeFaceLandmark"
-   default_detector_model='models\\blaze_face_short_range.tflite'
-   default_landmark_model='models\\face_landmark_v0_07.tflite'
+   default_detector_model='vela\\face_detection_front_128_full_integer_quant_vela.tflite'
+   default_landmark_model='vela\\face_landmark_192_full_integer_quant_vela.tflite'
 elif args.blaze == "pose":
    blaze_detector_type = "blazepose"
    blaze_landmark_type = "blazeposelandmark"
