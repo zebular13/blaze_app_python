@@ -65,8 +65,7 @@ class BlazeDetector(BlazeDetectorBase):
         self.w_scale = self.in_shape[2]
 
         self.num_anchors = self.out_clf_shape[1]
-        if self.DEBUG:
-            print("[BlazeDetector.load_model] Num Anchors : ",self.num_anchors)
+        print("[BlazeDetector.load_model] Num Anchors : ",self.num_anchors)
            
         self.config_model(self.blaze_app)
 

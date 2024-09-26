@@ -232,7 +232,7 @@ if bViewOutput:
     app_main_title = blaze_title+" Demo"
     app_ctrl_title = blaze_title+" Demo"
     app_debug_title = blaze_title+" Debug"
-    cv2.namedWindow(app_main_title)
+#    cv2.namedWindow(app_main_title)
 
     thresh_min_score = blaze_detector.min_score_thresh
     thresh_min_score_prev = thresh_min_score
@@ -376,10 +376,11 @@ while True:
             # display real-time FPS counter (if valid)
             if rt_fps_valid == True and bShowFPS:
                 cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
+            print(rt_fps_message)
 
-            if bViewOutput:                
+ #           if bViewOutput:                
                 # show the output image
-                cv2.imshow(app_main_title, output)
+ #               cv2.imshow(app_main_title, output)
 
             # Profiling
             if bProfileLog or bProfileView:
@@ -549,74 +550,74 @@ while True:
             cv2.imwrite(os.path.join(output_dir,filename),profile_fps_img)
             
 
-    if bStep == True:
-        key = cv2.waitKey(0)
-    elif bPause == True:
-        key = cv2.waitKey(0)
-    else:
-        key = cv2.waitKey(1)
+    # if bStep == True:
+    #     key = cv2.waitKey(0)
+    # elif bPause == True:
+    #     key = cv2.waitKey(0)
+    # else:
+    #     key = cv2.waitKey(1)
 
     #print(key)
     
-    bWrite = False
-    if key == 119: # 'w'
-        bWrite = True
+    # bWrite = False
+    # if key == 119: # 'w'
+    #     bWrite = True
 
-    if key == 115: # 's'
-        bStep = True    
+    # if key == 115: # 's'
+    #     bStep = True    
     
-    if key == 112: # 'p'
-        bPause = not bPause
+    # if key == 112: # 'p'
+    #     bPause = not bPause
 
-    if key == 99: # 'c'
-        bStep = False
-        bPause = False
+    # if key == 99: # 'c'
+    #     bStep = False
+    #     bPause = False
         
-    if key == 116: # 't'
-        bUseImage = not bUseImage  
+    # if key == 116: # 't'
+    #     bUseImage = not bUseImage  
 
-    if key == 100: # 'd'
-        bShowDebugImage = not bShowDebugImage  
-        if not bShowDebugImage:
-           cv2.destroyWindow(app_debug_title)
+    # if key == 100: # 'd'
+    #     bShowDebugImage = not bShowDebugImage  
+    #     if not bShowDebugImage:
+    #        cv2.destroyWindow(app_debug_title)
            
-    if key == 101: # 'e'
-        bShowScores = not bShowScores
-        blaze_detector.display_scores(debug=bShowScores)
-        if not bShowScores:
-           cv2.destroyWindow("Detection Scores (sigmoid)")
+    # if key == 101: # 'e'
+    #     bShowScores = not bShowScores
+    #     blaze_detector.display_scores(debug=bShowScores)
+    #     if not bShowScores:
+    #        cv2.destroyWindow("Detection Scores (sigmoid)")
 
-    if key == 102: # 'f'
-        bShowFPS = not bShowFPS
+    # if key == 102: # 'f'
+    #     bShowFPS = not bShowFPS
 
-    if key == 118: # 'v'
-        bVerbose = not bVerbose
-        blaze_detector.set_debug(debug=bVerbose) 
-        blaze_landmark.set_debug(debug=bVerbose)
+    # if key == 118: # 'v'
+    #     bVerbose = not bVerbose
+    #     blaze_detector.set_debug(debug=bVerbose) 
+    #     blaze_landmark.set_debug(debug=bVerbose)
 
-    if key == 122: # 'z'
-        bProfileLog = not bProfileLog
+    # if key == 122: # 'z'
+    #     bProfileLog = not bProfileLog
 
-    if key == 90: # 'Z'
-        bProfileView = not bProfileView 
-        blaze_detector.set_profile(profile=bProfileView) 
-        blaze_landmark.set_profile(profile=bProfileView)
-        if not bProfileView:
-            cv2.destroyWindow(profile_latency_title)
-            cv2.destroyWindow(profile_fps_title)
+    # if key == 90: # 'Z'
+    #     bProfileView = not bProfileView 
+    #     blaze_detector.set_profile(profile=bProfileView) 
+    #     blaze_landmark.set_profile(profile=bProfileView)
+    #     if not bProfileView:
+    #         cv2.destroyWindow(profile_latency_title)
+    #         cv2.destroyWindow(profile_fps_title)
 
-    if key == 27 or key == 113: # ESC or 'q':
-        break
+    # if key == 27 or key == 113: # ESC or 'q':
+    #     break
 
-    # Update the real-time FPS counter
-    rt_fps_count = rt_fps_count + 1
-    if rt_fps_count == 10:
-        t = (cv2.getTickCount() - rt_fps_time)/cv2.getTickFrequency()
-        rt_fps_valid = 1
-        rt_fps = 10.0/t
-        rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
-        #print("[INFO] ",rt_fps_message)
-        rt_fps_count = 0
+    # # Update the real-time FPS counter
+    # rt_fps_count = rt_fps_count + 1
+    # if rt_fps_count == 10:
+    #     t = (cv2.getTickCount() - rt_fps_time)/cv2.getTickFrequency()
+    #     rt_fps_valid = 1
+    #     rt_fps = 10.0/t
+    #     rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
+    #     #print("[INFO] ",rt_fps_message)
+    #     rt_fps_count = 0
 
 # Cleanup
 f_profile_csv.close()

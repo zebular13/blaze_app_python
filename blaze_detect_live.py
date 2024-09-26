@@ -852,7 +852,7 @@ while True:
         rt_fps_valid = 1
         rt_fps = 10.0/t
         rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
-        #print("[INFO] ",rt_fps_message)
+        print("[INFO] ",rt_fps_message)
         rt_fps_count = 0
 
 # Cleanup

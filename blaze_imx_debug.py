@@ -242,6 +242,9 @@ if not os.path.exists(output_dir):
 
 default_detector_model = "blaze_tflite/models/pose_detection_v0_07.tflite"
 default_landmark_model = "blaze_tflite/models/pose_landmark_v0_07_upper_body.tflite"
+# default_detector_model = "blaze_tflite/models/pose_detection.tflite"
+# default_landmark_model = "blaze_tflite/models/pose_landmark_full.tflite"
+
 
 debug_detector_model = "blaze_tflite_quant/models/pose_detection_128x128_full_integer_quant.tflite"
 debug_landmark_model = "blaze_tflite_quant/models/pose_landmark_upper_body_256x256_full_integer_quant.tflite"
@@ -299,7 +302,8 @@ bShowDebugImage = False
 bShowScores = False
 bShowFPS = args.fps
 bVerbose = args.debug
-bViewOutput = not args.withoutview
+bViewOutput = False
+# bViewOutput = not args.withoutview
 
 def ignore(x):
     pass
@@ -432,20 +436,20 @@ while True:
             Y6 = out2_debug.reshape(-1)
             X56 = range(0,len(Y5))
             #
-            figure, axis = plt.subplots(2, 3)
-            axis[0, 0].plot(X12, Y1)
-            axis[0, 0].set_title("Scores (reference)")
-            axis[1, 0].plot(X12, Y2)
-            axis[1, 0].set_title("Scores (debug)")
-            axis[0, 1].plot(X34, Y3)
-            axis[0, 1].set_title("Sigmoid (reference)")
-            axis[1, 1].plot(X34, Y4)
-            axis[1, 1].set_title("Sigmoid (debug)")
-            axis[0, 2].plot(X56, Y5)
-            axis[0, 2].set_title("BBoxes (reference)")
-            axis[1, 2].plot(X56, Y6)
-            axis[1, 2].set_title("BBoxes (debug)")
-            plt.show()            
+            # figure, axis = plt.subplots(2, 3)
+            # axis[0, 0].plot(X12, Y1)
+            # axis[0, 0].set_title("Scores (reference)")
+            # axis[1, 0].plot(X12, Y2)
+            # axis[1, 0].set_title("Scores (debug)")
+            # axis[0, 1].plot(X34, Y3)
+            # axis[0, 1].set_title("Sigmoid (reference)")
+            # axis[1, 1].plot(X34, Y4)
+            # axis[1, 1].set_title("Sigmoid (debug)")
+            # axis[0, 2].plot(X56, Y5)
+            # axis[0, 2].set_title("BBoxes (reference)")
+            # axis[1, 2].plot(X56, Y6)
+            # axis[1, 2].set_title("BBoxes (debug)")
+            # plt.show()            
             
             normalized_detections = blaze_detector.predict_on_image(img1)
             if len(normalized_detections) > 0:
@@ -575,66 +579,66 @@ while True:
                        ))
             
 
-    if bStep == True:
-        key = cv2.waitKey(0)
-    elif bPause == True:
-        key = cv2.waitKey(0)
-    else:
-        key = cv2.waitKey(1)
+    # if bStep == True:
+    #     key = cv2.waitKey(0)
+    # elif bPause == True:
+    #     key = cv2.waitKey(0)
+    # else:
+    #     key = cv2.waitKey(1)
 
-    #print(key)
+    # #print(key)
     
-    bWrite = False
-    if key == 119: # 'w'
-        bWrite = True
+    # bWrite = False
+    # if key == 119: # 'w'
+    #     bWrite = True
 
-    if key == 115: # 's'
-        bStep = True    
+    # if key == 115: # 's'
+    #     bStep = True    
     
-    if key == 112: # 'p'
-        bPause = not bPause
+    # if key == 112: # 'p'
+    #     bPause = not bPause
 
-    if key == 99: # 'c'
-        bStep = False
-        bPause = False
+    # if key == 99: # 'c'
+    #     bStep = False
+    #     bPause = False
         
-    if key == 116: # 't'
-        bUseImage = not bUseImage  
+    # if key == 116: # 't'
+    #     bUseImage = not bUseImage  
 
-    if key == 100: # 'd'
-        bShowDebugImage = not bShowDebugImage  
-        if not bShowDebugImage:
-           cv2.destroyWindow(app_debug_title)
+    # if key == 100: # 'd'
+    #     bShowDebugImage = not bShowDebugImage  
+    #     if not bShowDebugImage:
+    #        cv2.destroyWindow(app_debug_title)
            
-    if key == 101: # 'e'
-        bShowScores = not bShowScores
-        blaze_detector.display_scores(debug=bShowScores)
-        if not bShowScores:
-           cv2.destroyWindow("Detection Scores (sigmoid)")
+    # if key == 101: # 'e'
+    #     bShowScores = not bShowScores
+    #     blaze_detector.display_scores(debug=bShowScores)
+    #     if not bShowScores:
+    #        cv2.destroyWindow("Detection Scores (sigmoid)")
 
-    if key == 102: # 'f'
-        bShowFPS = not bShowFPS
+    # if key == 102: # 'f'
+    #     bShowFPS = not bShowFPS
 
-    if key == 118: # 'v'
-        bVerbose = not bVerbose
-        blaze_detector.set_debug(debug=bVerbose) 
-        blaze_landmark.set_debug(debug=bVerbose)
-        blaze_detector2.set_debug(debug=bVerbose) 
-        blaze_landmark2.set_debug(debug=bVerbose)
+    # if key == 118: # 'v'
+    #     bVerbose = not bVerbose
+    #     blaze_detector.set_debug(debug=bVerbose) 
+    #     blaze_landmark.set_debug(debug=bVerbose)
+    #     blaze_detector2.set_debug(debug=bVerbose) 
+    #     blaze_landmark2.set_debug(debug=bVerbose)
 
-    if key == 122: # 'z'
-        bProfileLog = not bProfileLog
+    # if key == 122: # 'z'
+    #     bProfileLog = not bProfileLog
 
-    if key == 90: # 'Z'
-        bProfileView = not bProfileView 
-        blaze_detector.set_profile(profile=bProfileView) 
-        blaze_landmark.set_profile(profile=bProfileView)
-        if not bProfileView:
-            cv2.destroyWindow(profile_latency_title)
-            cv2.destroyWindow(profile_fps_title)
+    # if key == 90: # 'Z'
+    #     bProfileView = not bProfileView 
+    #     blaze_detector.set_profile(profile=bProfileView) 
+    #     blaze_landmark.set_profile(profile=bProfileView)
+    #     if not bProfileView:
+    #         cv2.destroyWindow(profile_latency_title)
+    #         cv2.destroyWindow(profile_fps_title)
 
-    if key == 27 or key == 113: # ESC or 'q':
-        break
+    # if key == 27 or key == 113: # ESC or 'q':
+    #     break
 
     # Update the real-time FPS counter
     rt_fps_count = rt_fps_count + 1
@@ -643,7 +647,7 @@ while True:
         rt_fps_valid = 1
         rt_fps = 10.0/t
         rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
-        #print("[INFO] ",rt_fps_message)
+        print("[INFO] ",rt_fps_message)
         rt_fps_count = 0
 
 # Cleanup
