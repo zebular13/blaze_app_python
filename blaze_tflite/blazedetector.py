@@ -4,13 +4,13 @@ from blazebase import BlazeDetectorBase
 
 #import tensorflow as tf
 bUseTfliteRuntime = False
-try:
-    import tensorflow as tf
-    import tensorflow.lite
-except:
-    from tflite_runtime.interpreter import Interpreter
-    bUseTfliteRuntime = True
-
+# try:
+#     import tensorflow as tf
+#     import tensorflow.lite
+# except:
+#     from tflite_runtime.interpreter import Interpreter
+#     bUseTfliteRuntime = True
+import tflite_runtime.interpreter as tflite
 from timeit import default_timer as timer
 
 class BlazeDetector(BlazeDetectorBase):
@@ -25,11 +25,12 @@ class BlazeDetector(BlazeDetectorBase):
 
         if self.DEBUG:
            print("[BlazeDetector.load_model] Model File : ",model_path)
-           
-        if bUseTfliteRuntime:
-            self.interp_detector = Interpreter(model_path)
-        else:
-            self.interp_detector = tf.lite.Interpreter(model_path)
+        
+        delegate_path = "/usr/lib/libethosu_delegate.so"
+        if(delegate_path):
+            ext_delegate = [tflite.load_delegate(delegate_path)]
+            # self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
+            self.interp_detector = tflite.Interpreter(model_path)
         self.interp_detector.allocate_tensors()
 
         # reading tflite model paramteres
@@ -47,13 +48,21 @@ class BlazeDetector(BlazeDetectorBase):
                print("[BlazeDetector.load_model] Output[",i,"] Details : ",self.output_details[i])
                print("[BlazeDetector.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])
 
-        self.in_idx = self.input_details[0]['index']
-        self.out_reg_idx = self.output_details[0]['index']
-        self.out_clf_idx = self.output_details[1]['index']
+        # self.in_idx = self.input_details[0]['index']
+        # self.out_reg_idx = self.output_details[0]['index']
+        # self.out_clf_idx = self.output_details[1]['index']
 
+        # self.in_shape = self.input_details[0]['shape']
+        # self.out_reg_shape = self.output_details[0]['shape']
+        # self.out_clf_shape = self.output_details[1]['shape']
+
+        self.in_idx = self.input_details[0]['index']
+        self.out_reg_idx = self.output_details[1]['index']
+        self.out_clf_idx = self.output_details[0]['index']
+        
         self.in_shape = self.input_details[0]['shape']
-        self.out_reg_shape = self.output_details[0]['shape']
-        self.out_clf_shape = self.output_details[1]['shape']
+        self.out_reg_shape = self.output_details[1]['shape']
+        self.out_clf_shape = self.output_details[0]['shape']
         #if self.DEBUG:
         #   print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
         #   print("[BlazeDetector.load_model] Output1 Shape : ",self.out_reg_shape)

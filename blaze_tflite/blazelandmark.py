@@ -4,13 +4,14 @@ from blazebase import BlazeLandmarkBase
 
 #import tensorflow as tf
 bUseTfliteRuntime = False
-try:
-    import tensorflow as tf
-    import tensorflow.lite
+# try:
+#     import tensorflow as tf
+#     import tensorflow.lite
 
-except:
-    from tflite_runtime.interpreter import Interpreter
-    bUseTfliteRuntime = True
+# except:
+#     from tflite_runtime.interpreter import Interpreter
+#     bUseTfliteRuntime = True
+import tflite_runtime.interpreter as tflite
 
 from timeit import default_timer as timer
 
@@ -26,11 +27,11 @@ class BlazeLandmark(BlazeLandmarkBase):
         if self.DEBUG:
            print("[BlazeLandmark.load_model] Model File : ",model_path)
            
-        if bUseTfliteRuntime:
-            self.interp_landmark = Interpreter(model_path)
-        else:
-            self.interp_landmark = tf.lite.Interpreter(model_path)
-
+        delegate_path = "/usr/lib/libethosu_delegate.so"
+        if(delegate_path):
+            ext_delegate = [tflite.load_delegate(delegate_path)]
+            self.interp_landmark = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
+            # self.interp_landmark = tflite.Interpreter(model_path)
         self.interp_landmark.allocate_tensors()
 
         # reading tflite model paramteres
@@ -48,13 +49,21 @@ class BlazeLandmark(BlazeLandmarkBase):
                print("[BlazeLandmark.load_model] Output[",i,"] Details : ",self.output_details[i])
                print("[BlazeLandmark.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])          
                 
-        self.in_idx = self.input_details[0]['index']
-        self.out_landmark_idx = self.output_details[0]['index']
-        self.out_flag_idx = self.output_details[1]['index']
+        # self.in_idx = self.input_details[0]['index']
+        # self.out_landmark_idx = self.output_details[0]['index']
+        # self.out_flag_idx = self.output_details[1]['index']
 
+        # self.in_shape = self.input_details[0]['shape']
+        # self.out_landmark_shape = self.output_details[0]['shape']
+        # self.out_flag_shape = self.output_details[1]['shape']
+
+        self.in_idx = self.input_details[0]['index']
+        self.out_landmark_idx = self.output_details[1]['index']
+        self.out_flag_idx = self.output_details[2]['index']   
+        
         self.in_shape = self.input_details[0]['shape']
-        self.out_landmark_shape = self.output_details[0]['shape']
-        self.out_flag_shape = self.output_details[1]['shape']
+        self.out_landmark_shape = self.output_details[1]['shape']
+        self.out_flag_shape = self.output_details[2]['shape']   
         #if self.DEBUG:
         #   print("[BlazeLandmark.load_model] Input Shape : ",self.in_shape)
         #   print("[BlazeLandmark.load_model] Output1 Shape : ",self.out_landmark_shape)
