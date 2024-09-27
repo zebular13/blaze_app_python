@@ -47,9 +47,9 @@ import re
 import sys
 
 from datetime import datetime
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import getpass
 import socket
@@ -157,11 +157,15 @@ if bInputCamera == True:
         input_video = dev_video  
 
     # Open video
+    os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'hwaccel;qsv|video_codec;h264_qsv|vsync;0'
+
     cap = cv2.VideoCapture(input_video)
     frame_width = 640
     frame_height = 480
+    frame_fps = 30
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
+    cap.set(cv2.CAP_PROP_FPS, frame_fps) 
     #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
     #frame_height = int(round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
     print("[INFO] input : camera",input_video," (",frame_width,",",frame_height,")")
@@ -185,6 +189,8 @@ if not os.path.exists(output_dir):
 
 default_detector_model = "blaze_tflite/models/pose_detection_quant_floatinputs_vela.tflite"
 default_landmark_model = "blaze_tflite/models/pose_landmark_full_quant_floatinputs_vela.tflite"
+# default_detector_model = "blaze_tflite/models/pose_detection_128x128_integer_quant_vela.tflite" 
+# default_landmark_model = "blaze_tflite/models/pose_landmark_upper_body_256x256_integer_quant_vela.tflite"
 # default_detector_model = "blaze_tflite/models/output/pose_detection_quant_floatinputs_vela.tflite"
 # default_landmark_model = "blaze_tflite/models/output/pose_landmark_full_quant_floatinputs_vela.tflite"
 # default_detector_model = "blaze_tflite/models/output/pose_detection_128x128_integer_quant_vela.tflite"
@@ -346,4 +352,4 @@ while True:
         rt_fps_count = 0
 
 # Cleanup
-cv2.destroyAllWindows()
+# cv2.destroyAllWindows()

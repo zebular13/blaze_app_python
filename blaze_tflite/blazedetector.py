@@ -28,7 +28,7 @@ class BlazeDetector(BlazeDetectorBase):
         
         delegate_path = "/usr/lib/libethosu_delegate.so"
         if(delegate_path):
-            ext_delegate = [tflite.load_delegate(delegate_path)]
+            # ext_delegate = [tflite.load_delegate(delegate_path)]
             # self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
             self.interp_detector = tflite.Interpreter(model_path)
         self.interp_detector.allocate_tensors()
