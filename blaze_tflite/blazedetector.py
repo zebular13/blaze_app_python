@@ -14,7 +14,7 @@ import tflite_runtime.interpreter as tflite
 from timeit import default_timer as timer
 
 class BlazeDetector(BlazeDetectorBase):
-    def __init__(self,blaze_app="blazepalm"):
+    def __init__(self,blaze_app="blazepose"):
         super(BlazeDetector, self).__init__()
 
         self.blaze_app = blaze_app
@@ -28,9 +28,9 @@ class BlazeDetector(BlazeDetectorBase):
         
         delegate_path = "/usr/lib/libethosu_delegate.so"
         if(delegate_path):
-            # ext_delegate = [tflite.load_delegate(delegate_path)]
-            # self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
-            self.interp_detector = tflite.Interpreter(model_path)
+            ext_delegate = [tflite.load_delegate(delegate_path)]
+            self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
+            # self.interp_detector = tflite.Interpreter(model_path)
         self.interp_detector.allocate_tensors()
 
         # reading tflite model paramteres
@@ -64,9 +64,9 @@ class BlazeDetector(BlazeDetectorBase):
         self.out_reg_shape = self.output_details[1]['shape']
         self.out_clf_shape = self.output_details[0]['shape']
         #if self.DEBUG:
-        #   print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
-        #   print("[BlazeDetector.load_model] Output1 Shape : ",self.out_reg_shape)
-        #   print("[BlazeDetector.load_model] Output2 Shape : ",self.out_clf_shape)
+            # print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
+            # print("[BlazeDetector.load_model] Output1 Shape : ",self.out_reg_shape)
+            # print("[BlazeDetector.load_model] Output2 Shape : ",self.out_clf_shape)
 
         self.x_scale = self.in_shape[1]
         self.y_scale = self.in_shape[2]

@@ -16,7 +16,7 @@ import tflite_runtime.interpreter as tflite
 from timeit import default_timer as timer
 
 class BlazeLandmark(BlazeLandmarkBase):
-    def __init__(self,blaze_app="blazehandlandmark"):
+    def __init__(self,blaze_app="blazepose"):
         super(BlazeLandmark, self).__init__()
 
         self.blaze_app = blaze_app
