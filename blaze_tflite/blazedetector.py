@@ -11,10 +11,11 @@ bUseTfliteRuntime = False
 #     from tflite_runtime.interpreter import Interpreter
 #     bUseTfliteRuntime = True
 import tflite_runtime.interpreter as tflite
+
 from timeit import default_timer as timer
 
 class BlazeDetector(BlazeDetectorBase):
-    def __init__(self,blaze_app="blazepose"):
+    def __init__(self,blaze_app="blazepalm"):
         super(BlazeDetector, self).__init__()
 
         self.blaze_app = blaze_app
@@ -27,10 +28,12 @@ class BlazeDetector(BlazeDetectorBase):
            print("[BlazeDetector.load_model] Model File : ",model_path)
         
         delegate_path = "/usr/lib/libethosu_delegate.so"
-        if(delegate_path):
-            ext_delegate = [tflite.load_delegate(delegate_path)]
-            self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
-            # self.interp_detector = tflite.Interpreter(model_path)
+        if bUseTfliteRuntime:
+            self.interp_detector = Interpreter(model_path)
+        else:
+            # ext_delegate = [tflite.load_delegate(delegate_path)]
+            # self.interp_detector = tflite.Interpreter(model_path, experimental_delegates=ext_delegate)
+            self.interp_detector = tflite.Interpreter(model_path)
         self.interp_detector.allocate_tensors()
 
         # reading tflite model paramteres
@@ -48,6 +51,7 @@ class BlazeDetector(BlazeDetectorBase):
                print("[BlazeDetector.load_model] Output[",i,"] Details : ",self.output_details[i])
                print("[BlazeDetector.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])
 
+        ## use these for pose_detection.tflite + pose_landmark_full.tflite
         # self.in_idx = self.input_details[0]['index']
         # self.out_reg_idx = self.output_details[0]['index']
         # self.out_clf_idx = self.output_details[1]['index']
@@ -56,6 +60,7 @@ class BlazeDetector(BlazeDetectorBase):
         # self.out_reg_shape = self.output_details[0]['shape']
         # self.out_clf_shape = self.output_details[1]['shape']
 
+        ##use just these for []quant_floatinputs_vela.tflite models (no additional landmark adjusting needed)
         self.in_idx = self.input_details[0]['index']
         self.out_reg_idx = self.output_details[1]['index']
         self.out_clf_idx = self.output_details[0]['index']
@@ -63,10 +68,11 @@ class BlazeDetector(BlazeDetectorBase):
         self.in_shape = self.input_details[0]['shape']
         self.out_reg_shape = self.output_details[1]['shape']
         self.out_clf_shape = self.output_details[0]['shape']
+
         #if self.DEBUG:
-            # print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
-            # print("[BlazeDetector.load_model] Output1 Shape : ",self.out_reg_shape)
-            # print("[BlazeDetector.load_model] Output2 Shape : ",self.out_clf_shape)
+        #   print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
+        #   print("[BlazeDetector.load_model] Output1 Shape : ",self.out_reg_shape)
+        #   print("[BlazeDetector.load_model] Output2 Shape : ",self.out_clf_shape)
 
         self.x_scale = self.in_shape[1]
         self.y_scale = self.in_shape[2]
@@ -74,7 +80,8 @@ class BlazeDetector(BlazeDetectorBase):
         self.w_scale = self.in_shape[2]
 
         self.num_anchors = self.out_clf_shape[1]
-        print("[BlazeDetector.load_model] Num Anchors : ",self.num_anchors)
+        if self.DEBUG:
+            print("[BlazeDetector.load_model] Num Anchors : ",self.num_anchors)
            
         self.config_model(self.blaze_app)
 

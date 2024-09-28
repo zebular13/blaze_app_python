@@ -49,21 +49,32 @@ class BlazeLandmark(BlazeLandmarkBase):
                print("[BlazeLandmark.load_model] Output[",i,"] Details : ",self.output_details[i])
                print("[BlazeLandmark.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])          
                 
+        ## use these for pose_detection.tflite + pose_landmark_full.tflite
         # self.in_idx = self.input_details[0]['index']
         # self.out_landmark_idx = self.output_details[0]['index']
         # self.out_flag_idx = self.output_details[1]['index']
 
         # self.in_shape = self.input_details[0]['shape']
-        # self.out_landmark_shape = self.output_details[0]['shape']
+        # self.out_landmark_shape = self.output_details[0['shape']
         # self.out_flag_shape = self.output_details[1]['shape']
 
+        ## use these for []quant_floatinputs.tfllite models
         self.in_idx = self.input_details[0]['index']
-        self.out_landmark_idx = self.output_details[1]['index']
-        self.out_flag_idx = self.output_details[2]['index']   
-        
+        self.out_landmark_idx = self.output_details[3]['index']
+        self.out_flag_idx = self.output_details[1]['index']
+
         self.in_shape = self.input_details[0]['shape']
-        self.out_landmark_shape = self.output_details[1]['shape']
-        self.out_flag_shape = self.output_details[2]['shape']   
+        self.out_landmark_shape = self.output_details[3]['shape']
+        self.out_flag_shape = self.output_details[1]['shape']
+
+        # use these for pose_detection.tflite + pose_landmark_full.tflite, []quant_floatinputs_vela.tflite models
+        # self.in_idx = self.input_details[0]['index']
+        # self.out_landmark_idx = self.output_details[1]['index']
+        # self.out_flag_idx = self.output_details[2]['index']   
+        
+        # self.in_shape = self.input_details[0]['shape']
+        # self.out_landmark_shape = self.output_details[1]['shape']
+        # self.out_flag_shape = self.output_details[2]['shape']   
         #if self.DEBUG:
         #   print("[BlazeLandmark.load_model] Input Shape : ",self.in_shape)
         #   print("[BlazeLandmark.load_model] Output1 Shape : ",self.out_landmark_shape)

@@ -105,17 +105,17 @@ ap.add_argument('-f', '--fps'        , default=False, action='store_true', help=
 
 args = ap.parse_args()  
   
-print('Command line options:')
-print(' --input       : ', args.input)
-print(' --image       : ', args.image)
-print(' --blaze       : ', args.blaze)
-print(' --model1      : ', args.model1)
-print(' --model2      : ', args.model2)
-print(' --debug       : ', args.debug)
-print(' --withoutview : ', args.withoutview)
-print(' --profilelog  : ', args.profilelog)
-print(' --profileview  : ', args.profileview)
-print(' --fps         : ', args.fps)
+# print('Command line options:')
+# print(' --input       : ', args.input)
+# print(' --image       : ', args.image)
+# print(' --blaze       : ', args.blaze)
+# print(' --model1      : ', args.model1)
+# print(' --model2      : ', args.model2)
+# print(' --debug       : ', args.debug)
+# print(' --withoutview : ', args.withoutview)
+# print(' --profilelog  : ', args.profilelog)
+# print(' --profileview  : ', args.profileview)
+# print(' --fps         : ', args.fps)
 
 nb_blaze_pipelines = 1
 
@@ -149,8 +149,8 @@ if not os.path.exists(output_dir):
 
 # Open video
 cap = cv2.VideoCapture(input_video)
-frame_width = 640
-frame_height = 480
+frame_width = 320
+frame_height = 240
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
 #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
@@ -174,8 +174,12 @@ elif args.blaze == "pose":
    blaze_detector_type = "blazepose"
    blaze_landmark_type = "blazeposelandmark"
    blaze_title = "BlazePoseLandmark"
-   default_detector_model='models/pose_detection.tflite'
-   default_landmark_model='models/pose_landmark_full.tflite'
+#    default_detector_model='models/pose_detection.tflite'
+#    default_landmark_model='models/pose_landmark_full.tflite'
+#    default_detector_model = "models/pose_detection_quant_floatinputs.tflite"
+   default_landmark_model = "models/pose_landmark_full_quant_floatinputs.tflite"
+   default_detector_model = "models/pose_detection_quant_floatinputs_vela.tflite"
+#    default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
 else:
    print("[ERROR] Invalid Blaze application : ",args.blaze,".  MUST be one of hand,face,pose.")
 
@@ -197,21 +201,21 @@ blaze_landmark.load_model(args.model2)
 print("================================================================")
 print("Blaze Detect Live Demo")
 print("================================================================")
-print("\tPress ESC to quit ...")
-print("----------------------------------------------------------------")
-print("\tPress 'p' to pause video ...")
-print("\tPress 'c' to continue ...")
-print("\tPress 's' to step one frame at a time ...")
-print("\tPress 'w' to take a photo ...")
-print("----------------------------------------------------------------")
-print("\tPress 't' to toggle between image and live video")
-print("\tPress 'd' to toggle debug image on/off")
-print("\tPress 'e' to toggle scores image on/off")
-print("\tPress 'f' to toggle FPS display on/off")
-print("\tPress 'v' to toggle verbose on/off")
-print("\tPress 'z' to toggle profiling log on/off")
-print("\tPress 'Z' to toggle profiling view on/off")
-print("================================================================")
+# print("\tPress ESC to quit ...")
+# print("----------------------------------------------------------------")
+# print("\tPress 'p' to pause video ...")
+# print("\tPress 'c' to continue ...")
+# print("\tPress 's' to step one frame at a time ...")
+# print("\tPress 'w' to take a photo ...")
+# print("----------------------------------------------------------------")
+# print("\tPress 't' to toggle between image and live video")
+# print("\tPress 'd' to toggle debug image on/off")
+# print("\tPress 'e' to toggle scores image on/off")
+# print("\tPress 'f' to toggle FPS display on/off")
+# print("\tPress 'v' to toggle verbose on/off")
+# print("\tPress 'z' to toggle profiling log on/off")
+# print("\tPress 'Z' to toggle profiling view on/off")
+# print("================================================================")
 
 bStep = False
 bPause = False
@@ -221,10 +225,12 @@ bShowDebugImage = False
 bShowScores = False
 bShowFPS = args.fps
 bVerbose = args.debug
-bViewOutput = not args.withoutview
-bProfileLog = args.profilelog
-bProfileView = args.profileview
-
+# bViewOutput = not args.withoutview
+# bProfileLog = args.profilelog
+# bProfileView = args.profileview
+bViewOutput = False
+bProfileLog = True
+bProfileView = False
 def ignore(x):
     pass
 
@@ -389,6 +395,7 @@ while True:
                prof_detector_pre[pipeline_id]   = blaze_detector.profile_pre
                prof_detector_model[pipeline_id] = blaze_detector.profile_model
                prof_detector_post[pipeline_id]  = blaze_detector.profile_post
+               print("len(normalized_detections)", len(normalized_detections))
                if len(normalized_detections) > 0:
                    prof_extract_roi[pipeline_id]    = profile_extract
                    prof_landmark_pre[pipeline_id]   = blaze_landmark.profile_pre
