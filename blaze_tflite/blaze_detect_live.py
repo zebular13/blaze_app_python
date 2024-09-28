@@ -46,8 +46,10 @@ import subprocess
 import re
 import sys
 
+import signal
+
 from datetime import datetime
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 
 import getpass
 import socket
@@ -147,6 +149,23 @@ else:
 if not os.path.exists(output_dir):      
     os.mkdir(output_dir)            # Create the output directory if it doesn't already exist
 
+# Global variable for OpenCV objects
+cap = None
+
+def cleanup(signum, frame):
+    """
+    Handle the cleanup process when Ctrl-C is detected.
+    """
+    print("\n[INFO] Caught interrupt signal. Cleaning up...")
+    if cap is not None:
+        cap.release()
+        print("[INFO] Released the VideoCapture object.")
+    
+    # Close all OpenCV windows if any
+    cv2.destroyAllWindows()
+    print("[INFO] Closed all OpenCV windows.")
+    sys.exit(0)  # Exit the program gracefully
+
 # Open video
 cap = cv2.VideoCapture(input_video)
 frame_width = 320
@@ -177,9 +196,13 @@ elif args.blaze == "pose":
 #    default_detector_model='models/pose_detection.tflite'
 #    default_landmark_model='models/pose_landmark_full.tflite'
 #    default_detector_model = "models/pose_detection_quant_floatinputs.tflite"
-   default_landmark_model = "models/pose_landmark_full_quant_floatinputs.tflite"
+#    default_landmark_model = "models/pose_landmark_full_quant_floatinputs.tflite"
    default_detector_model = "models/pose_detection_quant_floatinputs_vela.tflite"
-#    default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
+   default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
+   #    default_detector_model = "models/pose_detection_128x128_integer_quant.tflite" #doesn't detect anything
+   #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant.tflite"
+   #    default_detector_model = "models/pose_detection_128x128_integer_quant_vela.tflite" #doesn't detect anything
+   #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant_vela.tflite"
 else:
    print("[ERROR] Invalid Blaze application : ",args.blaze,".  MUST be one of hand,face,pose.")
 
@@ -234,15 +257,15 @@ bProfileView = False
 def ignore(x):
     pass
 
-if bViewOutput:
-    app_main_title = blaze_title+" Demo"
-    app_ctrl_title = blaze_title+" Demo"
-    app_debug_title = blaze_title+" Debug"
-#    cv2.namedWindow(app_main_title)
+# if bViewOutput:
+#     app_main_title = blaze_title+" Demo"
+#     app_ctrl_title = blaze_title+" Demo"
+#     app_debug_title = blaze_title+" Debug"
+# #    cv2.namedWindow(app_main_title)
 
-    thresh_min_score = blaze_detector.min_score_thresh
-    thresh_min_score_prev = thresh_min_score
-    cv2.createTrackbar('threshMinScore', app_ctrl_title, int(thresh_min_score*100), 100, ignore)
+#     thresh_min_score = blaze_detector.min_score_thresh
+#     thresh_min_score_prev = thresh_min_score
+#     cv2.createTrackbar('threshMinScore', app_ctrl_title, int(thresh_min_score*100), 100, ignore)
 
 image = []
 output = []
@@ -259,6 +282,7 @@ rt_fps_x = int(10*scale)
 rt_fps_y = int((frame_height-10)*scale)
 
 while True:
+    signal.signal(signal.SIGINT, cleanup)
     # init the real-time FPS counter
     if rt_fps_count == 0:
         rt_fps_time = cv2.getTickCount()
@@ -297,15 +321,15 @@ while True:
             image = frame.copy()
 
             # Get trackbar values
-            if bViewOutput:
-                thresh_min_score = cv2.getTrackbarPos('threshMinScore', app_ctrl_title)
-                if thresh_min_score < 10:
-                    thresh_min_score = 10
-                    cv2.setTrackbarPos('threshMinScore', app_ctrl_title,thresh_min_score)
-                thresh_min_score = thresh_min_score*(1/100)
-                if thresh_min_score != thresh_min_score_prev:
-                    blaze_detector.min_score_thresh = thresh_min_score
-                    thresh_min_score_prev = thresh_min_score
+            # if bViewOutput:
+            #     thresh_min_score = cv2.getTrackbarPos('threshMinScore', app_ctrl_title)
+            #     if thresh_min_score < 10:
+            #         thresh_min_score = 10
+            #         cv2.setTrackbarPos('threshMinScore', app_ctrl_title,thresh_min_score)
+            #     thresh_min_score = thresh_min_score*(1/100)
+            #     if thresh_min_score != thresh_min_score_prev:
+            #         blaze_detector.min_score_thresh = thresh_min_score
+            #         thresh_min_score_prev = thresh_min_score
                 
                 
             #image = cv2.resize(image,(0,0), fx=scale, fy=scale) 
@@ -318,10 +342,10 @@ while True:
             img1,scale1,pad1=blaze_detector.resize_pad(image)
             profile_resize = timer()-start
 
-            if bShowDebugImage:
-                # show the resized input image
-                debug_img = img1.astype(np.float32)/255.0
-                debug_img = cv2.resize(debug_img,(blaze_landmark.resolution,blaze_landmark.resolution))
+            # if bShowDebugImage:
+            #     # show the resized input image
+            #     debug_img = img1.astype(np.float32)/255.0
+            #     debug_img = cv2.resize(debug_img,(blaze_landmark.resolution,blaze_landmark.resolution))
             
             normalized_detections = blaze_detector.predict_on_image(img1)
             if len(normalized_detections) > 0:
@@ -335,22 +359,22 @@ while True:
 
                 flags, normalized_landmarks = blaze_landmark.predict(roi_img)
 
-                if bShowDebugImage:
-                    # show the ROIs
-                    for i in range(roi_img.shape[0]):
-                        #roi_landmarks = np.expand_dims(normalized_landmarks[i,:,:].copy(), axis=0)
-                        roi_landmarks = normalized_landmarks[i,:,:].copy()
-                        roi_landmarks = roi_landmarks*blaze_landmark.resolution
-                        if blaze_landmark_type == "blazehandlandmark":
-                            draw_landmarks(roi_img[i], roi_landmarks[:,:2], HAND_CONNECTIONS, size=2)
-                        elif blaze_landmark_type == "blazefacelandmark":
-                            draw_landmarks(roi_img[i], roi_landmarks[:,:2], FACE_CONNECTIONS, size=1)                                    
-                        elif blaze_landmark_type == "blazeposelandmark":
-                            if roi_landmarks.shape[1] > 33:
-                                draw_landmarks(roi_img[i], roi_landmarks[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
-                            else:
-                                draw_landmarks(roi_img[i], roi_landmarks[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)                
-                        debug_img = cv2.hconcat([debug_img,roi_img[i]])
+                # if bShowDebugImage:
+                #     # show the ROIs
+                #     for i in range(roi_img.shape[0]):
+                #         #roi_landmarks = np.expand_dims(normalized_landmarks[i,:,:].copy(), axis=0)
+                #         roi_landmarks = normalized_landmarks[i,:,:].copy()
+                #         roi_landmarks = roi_landmarks*blaze_landmark.resolution
+                #         if blaze_landmark_type == "blazehandlandmark":
+                #             draw_landmarks(roi_img[i], roi_landmarks[:,:2], HAND_CONNECTIONS, size=2)
+                #         elif blaze_landmark_type == "blazefacelandmark":
+                #             draw_landmarks(roi_img[i], roi_landmarks[:,:2], FACE_CONNECTIONS, size=1)                                    
+                #         elif blaze_landmark_type == "blazeposelandmark":
+                #             if roi_landmarks.shape[1] > 33:
+                #                 draw_landmarks(roi_img[i], roi_landmarks[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
+                #             else:
+                #                 draw_landmarks(roi_img[i], roi_landmarks[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)                
+                #         debug_img = cv2.hconcat([debug_img,roi_img[i]])
 
                 start = timer() 
                 landmarks = blaze_landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
@@ -358,31 +382,26 @@ while True:
                 for i in range(len(flags)):
                     landmark, flag = landmarks[i], flags[i]
                     #if True: #flag>.5:
-                    if blaze_landmark_type == "blazehandlandmark":
-                        draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
-                    elif blaze_landmark_type == "blazefacelandmark":
-                        draw_landmarks(output, landmark[:,:2], FACE_CONNECTIONS, size=1)                                    
-                    elif blaze_landmark_type == "blazeposelandmark":
-                        if landmarks.shape[1] > 33:
-                            draw_landmarks(output, landmark[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
-                        else:
-                            draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)                
+                    if landmarks.shape[1] > 33:
+                        draw_landmarks(output, landmark[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
+                    else:
+                        draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)                
                    
                 draw_roi(output,roi_box)
                 draw_detections(output,detections)
                 profile_annotate = timer()-start
 
-            if bShowDebugImage:
-                if debug_img.shape[0] == debug_img.shape[1]:
-                    zero_img = np.full_like(debug_img,0.0)
-                    debug_img = cv2.hconcat([debug_img,zero_img])
-                debug_img = cv2.cvtColor(debug_img,cv2.COLOR_RGB2BGR)
-                cv2.imshow(app_debug_title, debug_img)
+            # if bShowDebugImage:
+            #     if debug_img.shape[0] == debug_img.shape[1]:
+            #         zero_img = np.full_like(debug_img,0.0)
+            #         debug_img = cv2.hconcat([debug_img,zero_img])
+            #     debug_img = cv2.cvtColor(debug_img,cv2.COLOR_RGB2BGR)
+            #     cv2.imshow(app_debug_title, debug_img)
                 
             # display real-time FPS counter (if valid)
-            if rt_fps_valid == True and bShowFPS:
-                cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
-            print(rt_fps_message)
+            # if rt_fps_valid == True and bShowFPS:
+            #     cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
+            # print(rt_fps_message)
 
  #           if bViewOutput:                
                 # show the output image
@@ -628,4 +647,6 @@ while True:
 
 # Cleanup
 f_profile_csv.close()
+cap.release()
+cap = None  
 cv2.destroyAllWindows()
