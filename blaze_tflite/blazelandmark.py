@@ -2,44 +2,35 @@ import numpy as np
 
 from blazebase import BlazeLandmarkBase
 
-#import tensorflow as tf
-bUseTfliteRuntime = False
-try:
-    import tensorflow as tf
-    import tensorflow.lite
-
-except:
-    from tflite_runtime.interpreter import Interpreter
-    bUseTfliteRuntime = True
-
 from timeit import default_timer as timer
 
 class BlazeLandmark(BlazeLandmarkBase):
-    def __init__(self,blaze_app="blazehandlandmark"):
+    def __init__(self,blaze_app="blazeposelandmark", delegate_path=None, run_on_hardware = True):
         super(BlazeLandmark, self).__init__()
 
         self.blaze_app = blaze_app
-
+        self.delegate_path = delegate_path
+        self.run_on_hardware = run_on_hardware
 
     def load_model(self, model_path):
 
-        if self.DEBUG:
-           print("[BlazeLandmark.load_model] Model File : ",model_path)
-        delegate_path = "/usr/lib/libethosu_delegate.so"   
-        if bUseTfliteRuntime:
-            self.interp_landmark = Interpreter(model_path)
+        if self.run_on_hardware:
+            import tflite_runtime.interpreter as tflite
         else:
-            ext_delegate = [tf.lite.load_delegate(delegate_path)]
-            self.interp_detector = tf.lite.Interpreter(model_path, experimental_delegates=ext_delegate)
-            #self.interp_landmark = tf.lite.Interpreter(model_path)
-
+            import tensorflow.lite as tflite
+           
+        if(self.delegate_path):
+            ext_delegate = [tflite.load_delegate(self.delegate_path)]
+            self.interp_landmark = tflite.Interpreter(model_path=model_path, experimental_delegates=ext_delegate)
+        else:
+            self.interp_landmark = tflite.Interpreter(model_path=model_path)
         self.interp_landmark.allocate_tensors()
 
         # reading tflite model paramteres
         self.input_details = self.interp_landmark.get_input_details()
         self.output_details = self.interp_landmark.get_output_details()
         self.num_inputs = len(self.input_details)
-        self.num_outputs = len(self.output_details)       
+        self.num_outputs = len(self.output_details)      
         if self.DEBUG:
            print("[BlazeLandmark.load_model] Number of Inputs : ",self.num_inputs)
            for i in range(self.num_inputs):

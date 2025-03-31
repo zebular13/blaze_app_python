@@ -143,7 +143,7 @@ ap.add_argument('-w', '--withoutview', default=False, action='store_true', help=
 ap.add_argument('-z', '--profilelog', default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
 ap.add_argument('-Z', '--profileview', default=False, action='store_true', help="Enable Profile View (Latency). Default is off")
 ap.add_argument('-f', '--fps', default=False, action='store_true', help="Enable FPS display. Default is off")
-ap.add_argument('-N', '--npu', default=False, action='store_true', help="Enable NPU")
+ap.add_argument('-N', '--npu', default=False, action='store_true', help="Enable NPU. Default is off")
 
 args = ap.parse_args()
 
@@ -233,11 +233,11 @@ elif args.blaze == "pose":
 #    default_detector_model = "models/pose_detection_quant.tflite"
 #    default_landmark_model = "models/pose_landmark_lite_quant.tflite"
 
-   default_detector_model = "models/pose_detection_quant_imx.tflite"
-   default_landmark_model = "models/pose_landmark_lite_quant_imx.tflite"
+#    default_detector_model = "models/pose_detection_quant_imx.tflite"
+#    default_landmark_model = "models/pose_landmark_lite_quant_imx.tflite"
    ##======
-#    default_detector_model = "models/pose_detection_quant_floatinputs_vela.tflite"
-#    default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
+   default_detector_model = "models/pose_detection_full_quant.tflite"
+   default_landmark_model = "models/pose_landmark_full_quant.tflite"
 #    default_landmark_model = "models/pose_detection_quant_floatinputs_sramonly_vela.tflite"
    #    default_detector_model = "models/pose_detection_128x128_integer_quant.tflite" #doesn't detect anything
    #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant.tflite"
@@ -254,7 +254,7 @@ if args.model2 == None:
 DELEGATE_PATH = None
 
 if args.npu == True:
-   DELEGATE_PATH = "/usr/lib/libethosu_delegate.so"
+    DELEGATE_PATH = "/usr/lib/libethosu_delegate.so" 
 
 blaze_detector = BlazeDetector(blaze_detector_type, delegate_path=DELEGATE_PATH)
 blaze_detector.set_debug(debug=args.debug)
