@@ -43,14 +43,14 @@ class BlazeLandmark(BlazeLandmarkBase):
         if self.DEBUG:
            print("[BlazeLandmark.load_model] Number of Inputs : ",self.num_inputs)
            for i in range(self.num_inputs):
-               print("[BlazeLandmark.load_model] Input[",i,"] Details : ",self.input_details[i])
+               #print("[BlazeLandmark.load_model] Input[",i,"] Details : ",self.input_details[i])
                print("[BlazeLandmark.load_model] Input[",i,"] Shape : ",self.input_details[i]['shape']," (",self.input_details[i]['name'],") Quantization : ",self.input_details[i]['quantization'])          
            print("[BlazeLandmark.load_model] Number of Outputs : ",self.num_outputs)
            for i in range(self.num_outputs):
-               print("[BlazeLandmark.load_model] Output[",i,"] Details : ",self.output_details[i])
+               #print("[BlazeLandmark.load_model] Output[",i,"] Details : ",self.output_details[i])
                print("[BlazeLandmark.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])          
                 
-         ## use these for pose_detection.tflite + pose_landmark_full.tflite, pose_detection_quant_floatinputs_sramonly_vela.tflite
+         ## use these for pose_detection.tflite + pose_landmark_full.tflite/pose_landmark_lite.tflite, pose_detection_quant_floatinputs_sramonly_vela.tflite, pose_landmark_v0_07_upper_body.tflite
         # self.in_idx = self.input_details[0]['index']
         # self.out_landmark_idx = self.output_details[0]['index']
         # self.out_flag_idx = self.output_details[1]['index']
@@ -76,11 +76,12 @@ class BlazeLandmark(BlazeLandmarkBase):
         # self.in_shape = self.input_details[0]['shape']
         # self.out_landmark_shape = self.output_details[1]['shape']
         # self.out_flag_shape = self.output_details[2]['shape']   
+
         
-        #if self.DEBUG:
-        #   print("[BlazeLandmark.load_model] Input Shape : ",self.in_shape)
-        #   print("[BlazeLandmark.load_model] Output1 Shape : ",self.out_landmark_shape)
-        #   print("[BlazeLandmark.load_model] Output2 Shape : ",self.out_flag_shape)
+        if self.DEBUG:
+          print("[BlazeLandmark.load_model] Input Shape : ",self.in_shape)
+          print("[BlazeLandmark.load_model] Output1 Shape : ",self.out_landmark_shape)
+          print("[BlazeLandmark.load_model] Output2 Shape : ",self.out_flag_shape)
 
         self.resolution = self.in_shape[1]
 

@@ -78,10 +78,14 @@ class GstDisplay:
         
         # Create elements
         self.appsrc = Gst.ElementFactory.make("appsrc", "source")
-        self.videoconvert = Gst.ElementFactory.make("videoconvert", "convert")
+        self.videoconvert1 = Gst.ElementFactory.make("videoconvert", "convert1")
+        self.rotate = Gst.ElementFactory.make("videoflip", "rotate")
+        self.rotate.set_property("method", "counterclockwise")  # 90° left rotation
+        self.videoconvert2 = Gst.ElementFactory.make("videoconvert", "convert2")
         self.autovideosink = Gst.ElementFactory.make("autovideosink", "sink")
         
-        if not all([self.pipeline, self.appsrc, self.videoconvert, self.autovideosink]):
+        if not all([self.pipeline, self.appsrc, self.videoconvert1, self.rotate, 
+                   self.videoconvert2, self.autovideosink]):
             print("ERROR: Could not create GStreamer elements")
             return
         
@@ -93,12 +97,16 @@ class GstDisplay:
         
         # Add elements to pipeline
         self.pipeline.add(self.appsrc)
-        self.pipeline.add(self.videoconvert)
+        self.pipeline.add(self.videoconvert1)
+        self.pipeline.add(self.rotate)
+        self.pipeline.add(self.videoconvert2)
         self.pipeline.add(self.autovideosink)
         
         # Link elements
-        self.appsrc.link(self.videoconvert)
-        self.videoconvert.link(self.autovideosink)
+        self.appsrc.link(self.videoconvert1)
+        self.videoconvert1.link(self.rotate)
+        self.rotate.link(self.videoconvert2)
+        self.videoconvert2.link(self.autovideosink)
         
         # Start pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
@@ -184,8 +192,8 @@ def cleanup(signum, frame):
 
 # Open video
 cap = cv2.VideoCapture(input_video)
-frame_width = 320
-frame_height = 240
+frame_width = 640
+frame_height = 480
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
@@ -210,8 +218,30 @@ elif args.blaze == "pose":
    blaze_detector_type = "blazepose"
    blaze_landmark_type = "blazeposelandmark"
    blaze_title = "BlazePoseLandmark"
+#    default_detector_model = "models/pose_detection.tflite"
+#    default_landmark_model = "models/pose_landmark_full.tflite"
+#    default_landmark_model = "models/pose_landmark_lite.tflite"
+
+#    default_detector_model = "models/pose_detection_v0_07.tflite"
+#    default_landmark_model = "models/pose_landmark_v0_07_upper_body.tflite"
+
+#    default_detector_model = "models/pose_detection_quant_floatinputs.tflite"
+#    default_landmark_model = "models/pose_landmark_full_quant_floatinputs.tflite"
+
+##NXP Models ===
+#    default_detector_model = "models/pose_detection_quant.tflite"
+#    default_landmark_model = "models/pose_landmark_lite_quant.tflite"
+
+#    default_detector_model = "models/pose_detection_quant_imx.tflite"
+#    default_landmark_model = "models/pose_landmark_lite_quant_imx.tflite"
+   ##======
    default_detector_model = "models/pose_detection_quant_floatinputs_vela.tflite"
    default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
+#    default_landmark_model = "models/pose_detection_quant_floatinputs_sramonly_vela.tflite"
+   #    default_detector_model = "models/pose_detection_128x128_integer_quant.tflite" #doesn't detect anything
+   #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant.tflite"
+   #    default_detector_model = "models/pose_detection_128x128_integer_quant_vela.tflite" #doesn't detect anything
+   #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant_vela.tflite"
 else:
    print("[ERROR] Invalid Blaze application : ", args.blaze, ". MUST be one of hand,face,pose.")
 
