@@ -213,14 +213,24 @@ elif args.blaze == "face":
    blaze_detector_type = "blazeface"
    blaze_landmark_type = "blazefacelandmark"
    blaze_title = "BlazeFaceLandmark"
-   default_detector_model='models/face_detection_short_range.tflite'
-   default_landmark_model='models/face_landmark.tflite'
+#    default_detector_model='models/face_detection_short_range.tflite'
+#    default_landmark_model='models/face_landmark.tflite'
+#    default_detector_model='models/face_detection_short_range_quant.tflite'
+#    default_detector_model='models/face_detection_short_range_kaggle_quant.tflite'
+#    default_landmark_model='models/face_landmark_kaggle_quant.tflite'
+#    default_detector_model='models/face_detection_short_range_kaggle140_quant.tflite' #detects nothing
+#    default_landmark_model='models/face_landmark_kaggle140_quant.tflite' #no landmarks
+#    default_detector_model='models/face_detection_short_range_pixabay_quant.tflite'
+#    default_landmark_model='models/face_landmark_pixabay_quant.tflite'
+   default_detector_model='models/face_detection_short_range_pixabay_unsignedquant.tflite'
+   default_landmark_model='models/face_landmark_pixabay_unsignedquant.tflite'
+
 elif args.blaze == "pose":
    blaze_detector_type = "blazepose"
    blaze_landmark_type = "blazeposelandmark"
    blaze_title = "BlazePoseLandmark"
-#    default_detector_model = "models/pose_detection.tflite"
-#    default_landmark_model = "models/pose_landmark_full.tflite"
+   default_detector_model = "models/pose_detection.tflite"
+   default_landmark_model = "models/pose_landmark_full.tflite"
 #    default_landmark_model = "models/pose_landmark_lite.tflite"
 
 #    default_detector_model = "models/pose_detection_v0_07.tflite"
@@ -233,16 +243,29 @@ elif args.blaze == "pose":
 #    default_detector_model = "models/pose_detection_quant.tflite"
 #    default_landmark_model = "models/pose_landmark_lite_quant.tflite"
 
-   default_detector_model = "models/pose_detection_quant_imx.tflite"
-   default_landmark_model = "models/pose_landmark_lite_quant_imx.tflite"
+#    default_detector_model = "models/pose_detection_quant_imx.tflite"
+#    default_landmark_model = "models/pose_landmark_lite_quant_imx.tflite"
+
+#    default_detector_model = "models/pose_detection_quant_imx_vela.tflite"
+#    default_landmark_model = "models/pose_landmark_lite_quant_imx_vela.tflite"
    ##======
 #    default_detector_model = "models/pose_detection_quant_floatinputs_vela.tflite"
 #    default_landmark_model = "models/pose_landmark_full_quant_floatinputs_vela.tflite"
+
+    ## Quantized with Mario's pixabay dataset
+#    default_detector_model = "models/pose_detection_pixabay_quant.tflite"
+#    default_landmark_model = "models/pose_landmark_full_pixabay_quant.tflite"
+#    default_detector_model = "models/pose_detection_pixabay_quant_vela.tflite"
+#    default_landmark_model = "models/pose_landmark_full_pixabay_quant_vela.tflite"
+
 #    default_landmark_model = "models/pose_detection_quant_floatinputs_sramonly_vela.tflite"
    #    default_detector_model = "models/pose_detection_128x128_integer_quant.tflite" #doesn't detect anything
    #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant.tflite"
    #    default_detector_model = "models/pose_detection_128x128_integer_quant_vela.tflite" #doesn't detect anything
    #default_landmark_model = "models/pose_landmark_upper_body_256x256_integer_quant_vela.tflite"
+#    default_detector_model = 'models/pose_detection_yoga0.1_26_quant_unsigned.tflite'
+#    default_landmark_model = 'models/pose_landmark_pixabay1958_quant_unsigned.tflite'
+
 else:
    print("[ERROR] Invalid Blaze application : ", args.blaze, ". MUST be one of hand,face,pose.")
 
@@ -255,6 +278,7 @@ DELEGATE_PATH = None
 
 if args.npu == True:
    DELEGATE_PATH = "/usr/lib/libethosu_delegate.so"
+   print("[INFO] Delegate path is ", DELEGATE_PATH)
 
 blaze_detector = BlazeDetector(blaze_detector_type, delegate_path=DELEGATE_PATH)
 blaze_detector.set_debug(debug=args.debug)
@@ -325,9 +349,10 @@ while True:
 
     normalized_detections = blaze_detector.predict_on_image(img1)
     if len(normalized_detections) > 0:
-        print("len(normalized_detections): ", len(normalized_detections))
+        #print("len(normalized_detections): ", len(normalized_detections))
         start = timer()          
         detections = blaze_detector.denormalize_detections(normalized_detections, scale1, pad1)
+
         xc, yc, scale, theta = blaze_detector.detection2roi(detections)
         roi_img, roi_affine, roi_box = blaze_landmark.extract_roi(image, xc, yc, theta, scale)
         profile_extract = timer() - start
@@ -337,20 +362,33 @@ while True:
         start = timer() 
         landmarks = blaze_landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
     
-        # Ensure landmarks is in the correct format (N,2) array
-        if len(landmarks.shape) == 3:
-            # If we have multiple detections (batch dimension), take the first one
-            landmarks = landmarks[0]
+        # # Ensure landmarks is in the correct format (N,2) array
+        # if len(landmarks.shape) == 3:
+        #     # If we have multiple detections (batch dimension), take the first one
+        #     landmarks = landmarks[0]
     
-        # Convert to (x,y) coordinates
-        landmark_points = landmarks[:, :2]
+        # # Convert to (x,y) coordinates
+        # landmark_points = landmarks[:, :2]
             
-        # Draw landmarks and detections
-        if landmarks.shape[0] > 33:  # Check number of landmarks, not features
-            draw_landmarks(output, landmark_points, POSE_FULL_BODY_CONNECTIONS, size=2)
-        else:
-            draw_landmarks(output, landmark_points, POSE_UPPER_BODY_CONNECTIONS, size=2)                        
+        # # Draw landmarks and detections
+        # if landmarks.shape[0] > 33:  # Check number of landmarks, not features
+        #     draw_landmarks(output, landmark_points, POSE_FULL_BODY_CONNECTIONS, size=2)
+        # else:
+        #     draw_landmarks(output, landmark_points, POSE_UPPER_BODY_CONNECTIONS, size=2)                        
         
+        for i in range(len(flags)):
+            landmark, flag = landmarks[i], flags[i]
+            #if True: #flag>.5:
+            if blaze_landmark_type == "blazehandlandmark":
+                draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
+            elif blaze_landmark_type == "blazefacelandmark":
+                draw_landmarks(output, landmark[:,:2], FACE_CONNECTIONS, size=1)                                    
+            elif blaze_landmark_type == "blazeposelandmark":
+                if landmarks.shape[1] > 33:
+                    draw_landmarks(output, landmark[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
+                else:
+                    draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)     
+
         draw_roi(output, roi_box)
         draw_detections(output, detections)
         profile_annotate = timer() - start

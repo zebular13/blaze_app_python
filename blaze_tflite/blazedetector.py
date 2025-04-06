@@ -51,22 +51,22 @@ class BlazeDetector(BlazeDetectorBase):
                print("[BlazeDetector.load_model] Output[",i,"] Shape : ",self.output_details[i]['shape']," (",self.output_details[i]['name'],") Quantization : ",self.output_details[i]['quantization'])
 
         ## use these for pose_detection.tflite. pose_detection_v0_07.tflite
-        # self.in_idx = self.input_details[0]['index']
-        # self.out_reg_idx = self.output_details[0]['index']
-        # self.out_clf_idx = self.output_details[1]['index']
+        self.in_idx = self.input_details[0]['index']
+        self.out_reg_idx = self.output_details[0]['index']
+        self.out_clf_idx = self.output_details[1]['index']
 
-        # self.in_shape = self.input_details[0]['shape']
-        # self.out_reg_shape = self.output_details[0]['shape']
-        # self.out_clf_shape = self.output_details[1]['shape']
+        self.in_shape = self.input_details[0]['shape']
+        self.out_reg_shape = self.output_details[0]['shape']
+        self.out_clf_shape = self.output_details[1]['shape']
 
         ##use just these for []quant_floatinputs_vela.tflite models (no additional landmark adjusting needed)
-        self.in_idx = self.input_details[0]['index']
-        self.out_reg_idx = self.output_details[1]['index']
-        self.out_clf_idx = self.output_details[0]['index']
+        # self.in_idx = self.input_details[0]['index']
+        # self.out_reg_idx = self.output_details[1]['index']
+        # self.out_clf_idx = self.output_details[0]['index']
         
-        self.in_shape = self.input_details[0]['shape']
-        self.out_reg_shape = self.output_details[1]['shape']
-        self.out_clf_shape = self.output_details[0]['shape']
+        # self.in_shape = self.input_details[0]['shape']
+        # self.out_reg_shape = self.output_details[1]['shape']
+        # self.out_clf_shape = self.output_details[0]['shape']
 
         if self.DEBUG:
           print("[BlazeDetector.load_model] Input Shape : ",self.in_shape)
