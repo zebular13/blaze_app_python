@@ -2,36 +2,33 @@ import numpy as np
 
 from blazebase import BlazeLandmarkBase
 
-#import tensorflow as tf
-bUseTfliteRuntime = False
-# try:
-#     import tensorflow as tf
-#     import tensorflow.lite
-
-# except:
-#     from tflite_runtime.interpreter import Interpreter
-#     bUseTfliteRuntime = True
-
 import tflite_runtime.interpreter as tflite
 
 from timeit import default_timer as timer
 
 class BlazeLandmark(BlazeLandmarkBase):
-    def __init__(self,blaze_app="blazehandlandmark"):
+    def __init__(self,blaze_app="blazehandlandmark", delegate_path=None, run_on_hardware = True):
         super(BlazeLandmark, self).__init__()
 
         self.blaze_app = blaze_app
-
+        self.delegate_path = delegate_path
+        self.run_on_hardware = run_on_hardware
 
     def load_model(self, model_path):
 
         if self.DEBUG:
            print("q[BlazeLandmark.load_model] Model File : ",model_path)
            
-        if bUseTfliteRuntime:
-            self.interp_landmark = Interpreter(model_path)
+        if self.run_on_hardware:
+            import tflite_runtime.interpreter as tflite
         else:
-            self.interp_landmark = tflite.Interpreter(model_path)
+            import tensorflow.lite as tflite
+           
+        if(self.delegate_path):
+            ext_delegate = [tflite.load_delegate(self.delegate_path)]
+            self.interp_landmark = tflite.Interpreter(model_path=model_path, experimental_delegates=ext_delegate)
+        else:
+            self.interp_landmark = tflite.Interpreter(model_path=model_path)
 
         self.interp_landmark.allocate_tensors()
 
@@ -66,30 +63,32 @@ class BlazeLandmark(BlazeLandmarkBase):
         # self.out_flag_shape = self.output_details[1]['shape']
 
         ### use these for pose_landmark_full.tflite, pose_detection_quant_floatinputs_sramonly_vela.tflite
-        # self.in_idx = self.input_details[0]['index']
-        # self.out_landmark_idx = self.output_details[0]['index']
-        # self.out_flag_idx = self.output_details[1]['index']
-        
-        # self.in_quantization = self.input_details[0]['quantization']
-        # self.out_landmark_quantization = self.output_details[0]['quantization']
-        # self.out_flag_quantization = self.output_details[1]['quantization']
-
-        # self.in_shape = self.input_details[0]['shape']
-        # self.out_landmark_shape = self.output_details[0]['shape']
-        # self.out_flag_shape = self.output_details[1]['shape']
-
-        ### use these for pose_landmark_full_quant.tflite
         self.in_idx = self.input_details[0]['index']
-        self.out_landmark_idx = self.output_details[3]['index']
+        self.out_landmark_idx = self.output_details[0]['index']
         self.out_flag_idx = self.output_details[1]['index']
-
+        
         self.in_quantization = self.input_details[0]['quantization']
-        self.out_landmark_quantization = self.output_details[3]['quantization']
+        self.out_landmark_quantization = self.output_details[0]['quantization']
         self.out_flag_quantization = self.output_details[1]['quantization']
 
         self.in_shape = self.input_details[0]['shape']
-        self.out_landmark_shape = self.output_details[3]['shape']
+        self.out_landmark_shape = self.output_details[0]['shape']
         self.out_flag_shape = self.output_details[1]['shape']
+
+
+        ### use these for pose_landmark_full_quant.tflite
+        # self.in_idx = self.input_details[0]['index']
+        # self.out_landmark_idx = self.output_details[3]['index']
+        # self.out_flag_idx = self.output_details[1]['index']
+
+        # self.in_quantization = self.input_details[0]['quantization']
+        # self.out_landmark_quantization = self.output_details[3]['quantization']
+        # self.out_flag_quantization = self.output_details[1]['quantization']
+
+        # self.in_shape = self.input_details[0]['shape']
+        # self.out_landmark_shape = self.output_details[3]['shape']
+        # self.out_flag_shape = self.output_details[1]['shape']
+
 
         ### use these for pose_detection.tflite + pose_landmark_full.tflite, []quant_floatinputs_vela.tflite models
         # self.in_idx = self.input_details[0]['index']
