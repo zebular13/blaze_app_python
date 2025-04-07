@@ -1,51 +1,42 @@
 '''
+Optimized BlazePose with NNStreamer - Full Implementation with Profiling
 Copyright 2024 Avnet Inc.
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Licensed under the Apache License, Version 2.0
 '''
 
 import numpy as np
 import cv2
 import os
-from datetime import datetime
-import gi
-gi.require_version('Gst', '1.0')
-gi.require_version('GstBase', '1.0')
-gi.require_version('GstVideo', '1.0')
-gi.require_version('GstApp', '1.0')
-from gi.repository import Gst, GObject, GstBase, GstVideo, GstApp, GLib
-
 import sys
 import argparse
 import glob
 import subprocess
 import signal
 from timeit import default_timer as timer
+import time
+from datetime import datetime
 import getpass
 import socket
-import pathlib
-import time
+import gi
 
-# NNStreamer Python API
+gi.require_version('Gst', '1.0')
+gi.require_version('GstBase', '1.0')
+gi.require_version('GstVideo', '1.0')
+gi.require_version('GstApp', '1.0')
+from gi.repository import Gst, GObject, GstBase, GstVideo, GstApp, GLib
+
+# NNStreamer Python API (if used)
 try:
     import nnstreamer_python as nns
 except ImportError:
-    print("NNStreamer Python API not found. Please install NNStreamer.")
-    sys.exit(1)
+    print("NNStreamer Python API not found. Running in GStreamer-only mode.")
 
 # Local imports
 sys.path.append(os.path.abspath('../blaze_common/'))
 from blazedetector import BlazeDetector
 from blazelandmark import BlazeLandmark
 from visualization import draw_detections, draw_landmarks, draw_roi
-from visualization import POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
+from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
 
 # Constants
 SCALE = 1.0
@@ -56,24 +47,20 @@ TEXT_THICKNESS = max(1, int(2 * SCALE))
 LINE_TYPE = cv2.LINE_AA
 
 class GstDisplay:
-    def __init__(self, width, height, title="BlazePose Output"):
+    def __init__(self, width=640, height=480):
         self.width = width
         self.height = height
         
-        # Create pipeline
+        # Create GStreamer display pipeline
         self.pipeline = Gst.Pipeline.new("display-pipeline")
         
-        # Create elements
+        # Elements
         self.appsrc = Gst.ElementFactory.make("appsrc", "source")
-        self.videoconvert1 = Gst.ElementFactory.make("videoconvert", "convert1")
-        self.capsfilter = Gst.ElementFactory.make("capsfilter", "capsfilter")
-        self.videoconvert2 = Gst.ElementFactory.make("videoconvert", "convert2")
-        self.autovideosink = Gst.ElementFactory.make("autovideosink", "sink")
+        self.videoconvert = Gst.ElementFactory.make("videoconvert", "convert")
+        self.sink = Gst.ElementFactory.make("autovideosink", "sink")
         
-        if not all([self.pipeline, self.appsrc, self.videoconvert1, 
-                   self.capsfilter, self.videoconvert2, self.autovideosink]):
-            print("ERROR: Could not create GStreamer elements")
-            return
+        if not all([self.pipeline, self.appsrc, self.videoconvert, self.sink]):
+            raise RuntimeError("Failed to create GStreamer elements")
         
         # Configure appsrc
         caps = Gst.Caps.from_string(
@@ -82,70 +69,65 @@ class GstDisplay:
         self.appsrc.set_property("format", Gst.Format.TIME)
         self.appsrc.set_property("block", True)
         
-        # Configure capsfilter
-        self.capsfilter.set_property("caps", Gst.Caps.from_string(
-            "video/x-raw,format=RGB"))
-        
-        # Add elements to pipeline
+        # Add and link elements
         self.pipeline.add(self.appsrc)
-        self.pipeline.add(self.videoconvert1)
-        self.pipeline.add(self.capsfilter)
-        self.pipeline.add(self.videoconvert2)
-        self.pipeline.add(self.autovideosink)
+        self.pipeline.add(self.videoconvert)
+        self.pipeline.add(self.sink)
         
-        # Link elements
-        self.appsrc.link(self.videoconvert1)
-        self.videoconvert1.link(self.capsfilter)
-        self.capsfilter.link(self.videoconvert2)
-        self.videoconvert2.link(self.autovideosink)
+        self.appsrc.link(self.videoconvert)
+        self.videoconvert.link(self.sink)
         
         # Start pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
     
     def push_frame(self, frame):
-        """Push a frame to the display pipeline"""
-        if frame.shape[0] != self.height or frame.shape[1] != self.width:
+        """Push frame to GStreamer display pipeline"""
+        if frame.shape != (self.height, self.width, 3):
             frame = cv2.resize(frame, (self.width, self.height))
         
-        # Create buffer from frame data
+        # Create GStreamer buffer from numpy array (zero-copy if possible)
         buffer = Gst.Buffer.new_wrapped(frame.tobytes())
         self.appsrc.emit("push-buffer", buffer)
     
     def close(self):
-        """Close the display pipeline"""
+        """Cleanup"""
         self.pipeline.set_state(Gst.State.NULL)
 
-class BlazePoseNNStreamer:
+class OptimizedBlazePose:
     def __init__(self, args):
         self.args = args
-        self.width = 320
-        self.height = 240
-        self.pipeline = None
-        self.display = None
+        self.width = 640
+        self.height = 480
         self.running = False
         self.frame_count = 0
-        self.fps_count = 0
-        self.fps_time = 0
-        self.fps = 0
+        self.fps = 0.0
+        self.last_time = time.time()
         
+        self.fps_count = 0
+
         # Initialize models
         self.initialize_models()
         
-        # Setup pipelines
+        # Setup GStreamer pipeline
         self.create_pipeline()
+        
+        # Pre-allocated buffers (reduces memory allocation in callbacks)
+        self.frame_buffer = np.empty((self.height, self.width, 3), dtype=np.uint8)
         self.display = GstDisplay(self.width, self.height)
         
-        # Output directory
-        self.output_dir = './captured-images'
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-        
-        # Profiling CSV
-        self.profile_csv = './blaze_detect_nnstreamer.csv'
-        self.init_profile_csv()
-
+        # Profiling setup
+        self.profile_csv = './blaze_detect_nnstreamer_optimized.csv'
+        if self.args.profilelog:
+            if os.path.isfile(self.profile_csv):
+                self.f_profile = open(self.profile_csv, "a")
+            else:
+                self.f_profile = open(self.profile_csv, "w")
+                self.f_profile.write("timestamp,user,host,pipeline,resize,detector_pre,detector_model,"
+                                   "detector_post,extract_roi,landmark_pre,landmark_model,"
+                                   "landmark_post,annotate,total,fps\n")
+    
     def initialize_models(self):
-        """Initialize detection and landmark models based on arguments"""
+        """Initialize BlazePose models based on args"""
         if self.args.blaze == "hand":
             self.detector_type = "blazepalm"
             self.landmark_type = "blazehandlandmark"
@@ -154,8 +136,8 @@ class BlazePoseNNStreamer:
         elif self.args.blaze == "face":
             self.detector_type = "blazeface"
             self.landmark_type = "blazefacelandmark"
-            default_detector = 'models/output/face_detection_short_range_pixabay_unsignedquant_vela.tflite'
-            default_landmark = 'models/output/face_landmark_pixabay_unsignedquant_vela.tflite'
+            default_detector = 'models/face_detection_short_range_pixabay1675_unsigned_uint8quant_vela.tflite'
+            default_landmark = 'models/face_landmark_pixabay1941_unsigned_uint8quant_vela.tflite'
         elif self.args.blaze == "pose":
             self.detector_type = "blazepose"
             self.landmark_type = "blazeposelandmark"
@@ -179,89 +161,82 @@ class BlazePoseNNStreamer:
         self.landmark = BlazeLandmark(self.landmark_type, delegate_path=delegate)
         self.landmark.set_debug(debug=self.args.debug)
         self.landmark.load_model(self.landmark_model)
-
-    def init_profile_csv(self):
-        """Initialize profiling CSV file"""
-        if os.path.isfile(self.profile_csv):
-            self.f_profile = open(self.profile_csv, "a")
-        else:
-            self.f_profile = open(self.profile_csv, "w")
-            self.f_profile.write("timestamp,user,host,pipeline,resize,detector_pre,detector_model,"
-                               "detector_post,extract_roi,landmark_pre,landmark_model,"
-                               "landmark_post,annotate,total,fps\n")
-
+    
     def create_pipeline(self):
-        """Create the NNStreamer pipeline"""
+        """Create optimized GStreamer pipeline"""
         # Find video device
         dev_video = get_video_dev_by_name("uvcvideo")
         input_source = self.args.input if self.args.input else dev_video if dev_video else "/dev/video0"
         
-        # Pipeline string
         pipeline_str = (
             f"v4l2src device={input_source} ! "
             "video/x-raw,format=YUY2,width=640,height=480,framerate=30/1 ! "
-            "videoconvert ! video/x-raw,format=BGR ! "
+            "imxvideoconvert_pxp ! video/x-raw,format=BGR ! "
             "tee name=t ! "
-            "queue ! videoconvert ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true sync=false "
-            "t. ! queue ! videoconvert ! autovideosink"
+            "queue max-size-buffers=2 leaky=downstream ! "
+            "appsink name=appsink emit-signals=true sync=false max-buffers=2 drop=true "
+            "t. ! queue ! videoconvert ! videoflip method=counterclockwise ! autovideosink sync=false"
         )
         
-        print(f"Creating pipeline: {pipeline_str}")
+        print(f"GStreamer Pipeline:\n{pipeline_str}")
         self.pipeline = Gst.parse_launch(pipeline_str)
         
-        # Setup appsink
+        # Configure appsink
         self.appsink = self.pipeline.get_by_name("appsink")
         self.appsink.connect("new-sample", self.on_new_sample)
         
-        # Setup bus
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect("message", self.on_message)
-
+        # Bus for message handling
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
+        self.bus.connect("message", self.on_message)
+    
     def on_new_sample(self, appsink):
-        """Callback for new samples from appsink"""
+        """Optimized callback for new frames"""
         sample = appsink.emit("pull-sample")
         if not sample:
             return Gst.FlowReturn.ERROR
         
-        # Get buffer and map it
         buffer = sample.get_buffer()
         success, map_info = buffer.map(Gst.MapFlags.READ)
         if not success:
             return Gst.FlowReturn.ERROR
         
-        # Convert to numpy array
-        frame = np.ndarray(
-            shape=(self.height, self.width, 3),
-            dtype=np.uint8,
-            buffer=map_info.data
-        )
+        # Use pre-allocated buffer (faster than new allocation)
+        self.frame_buffer[:,:,:] = np.frombuffer(map_info.data, dtype=np.uint8).reshape(
+            (self.height, self.width, 3))
         
         # Process frame
-        self.process_frame(frame.copy())
-        
-        # Update FPS counter
-        self.update_fps_counter()
+        self.process_frame(self.frame_buffer)
         
         buffer.unmap(map_info)
-        return Gst.FlowReturn.OK
-
-    def process_frame(self, frame):
-        """Process frame through BlazePose pipeline"""
-        if self.fps_count == 0:
-            self.fps_time = timer()
         
+        # Update FPS counter
         self.frame_count += 1
-        image = frame.copy()
-        output = image.copy()
-        
-        # Profile timers
+        if self.frame_count % 10 == 0:
+            now = time.time()
+            self.fps = 10.0 / (now - self.last_time)
+            self.last_time = now
+        # if self.frame_count == 10:
+        #     rt = (cv2.getTickCount() - rt_fps_time)/cv2.getTickFrequency()
+        #     rt_fps_valid = True
+        #     rt_fps = 10.0/t
+        #     rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
+        #     rt_fps_count = 0
+            
+        return Gst.FlowReturn.OK
+    
+    def process_frame(self, frame):
+        """Process frame through BlazePose models"""
+        # Initialize profiling variables if needed
         if self.args.profilelog or self.args.profileview:
             start_total = timer()
             profile_resize = 0
             profile_extract = 0
             profile_annotate = 0
         
+        image = frame.copy()
+        output = frame.copy()
+
         # Detection pipeline
         if self.args.profilelog or self.args.profileview:
             start = timer()
@@ -276,12 +251,9 @@ class BlazePoseNNStreamer:
         
         if len(normalized_detections) > 0:
             # Denormalize detections
-            detections = self.detector.denormalize_detections(normalized_detections, scale1, pad1)
-            
-            # Extract ROI
             if self.args.profilelog or self.args.profileview:
                 start = timer()
-            
+            detections = self.detector.denormalize_detections(normalized_detections, scale1, pad1)
             xc, yc, scale, theta = self.detector.detection2roi(detections)
             roi_img, roi_affine, roi_box = self.landmark.extract_roi(image, xc, yc, theta, scale)
             
@@ -290,19 +262,25 @@ class BlazePoseNNStreamer:
             
             # Landmark prediction
             flags, normalized_landmarks = self.landmark.predict(roi_img)
-            landmarks = self.landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
             
             # Annotate
             if self.args.profilelog or self.args.profileview:
                 start = timer()
             
+            landmarks = self.landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
+            
             for i in range(len(flags)):
                 landmark, flag = landmarks[i], flags[i]
-                if self.landmark_type == "blazeposelandmark":
+                #if True: #flag>.5:
+                if self.landmark_type == "blazehandlandmark":
+                    draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
+                elif self.landmark_type == "blazefacelandmark":
+                    draw_landmarks(output, landmark[:,:2], FACE_CONNECTIONS, size=1)                                    
+                elif self.landmark_type == "blazeposelandmark":
                     if landmarks.shape[1] > 33:
                         draw_landmarks(output, landmark[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
                     else:
-                        draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)
+                        draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)    
             
             draw_roi(output, roi_box)
             draw_detections(output, detections)
@@ -316,21 +294,15 @@ class BlazePoseNNStreamer:
             cv2.putText(output, fps_text, (10, self.height-10), 
                        TEXT_FONT, TEXT_SIZE, TEXT_COLOR, TEXT_THICKNESS, LINE_TYPE)
         
-        # Push frame to GStreamer display
+        # Push to display
         self.display.push_frame(output)
         
-        # Log profiling data
+        # Log profiling data if enabled
         if self.args.profilelog:
             self.log_profile_data(profile_resize, profile_extract, profile_annotate, start_total)
-
-    def update_fps_counter(self):
-        """Update FPS counter"""
-        self.fps_count += 1
-        if self.fps_count == 10:
-            elapsed = timer() - self.fps_time
-            self.fps = 10.0 / elapsed
-            self.fps_count = 0
-
+    
+    
+    
     def log_profile_data(self, resize_time, extract_time, annotate_time, start_time):
         """Log profiling data to CSV"""
         total_time = timer() - start_time
@@ -348,43 +320,43 @@ class BlazePoseNNStreamer:
         
         self.f_profile.write(csv_line)
         self.f_profile.flush()
-
+           
+    
     def on_message(self, bus, message):
         """Handle GStreamer bus messages"""
-        t = message.type
-        if t == Gst.MessageType.EOS:
+        if message.type == Gst.MessageType.EOS:
             print("End of stream")
             self.stop()
-        elif t == Gst.MessageType.ERROR:
+        elif message.type == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            print(f"Error: {err}, Debug: {debug}")
+            print(f"Error: {err} - {debug}")
             self.stop()
-        return True
-
+    
     def start(self):
         """Start the pipeline"""
-        print("Starting pipeline...")
         self.running = True
         self.pipeline.set_state(Gst.State.PLAYING)
         
-        # Main loop
+        # Main loop (using GLib for proper integration)
+        self.loop = GLib.MainLoop()
         try:
-            while self.running:
-                time.sleep(0.1)
+            self.loop.run()
         except KeyboardInterrupt:
             self.stop()
-
+    
     def stop(self):
-        """Stop the pipeline"""
-        print("Stopping pipeline...")
-        self.running = False
-        self.pipeline.set_state(Gst.State.NULL)
-        if self.display:
-            self.display.close()
-        if hasattr(self, 'f_profile'):
-            self.f_profile.close()
-        sys.exit(0)
-
+        """Cleanup"""
+        if self.running:
+            self.running = False
+            self.pipeline.set_state(Gst.State.NULL)
+            if self.display:
+                self.display.close()
+            if hasattr(self, 'f_profile'):
+                self.f_profile.close()
+            if hasattr(self, 'loop'):
+                self.loop.quit()
+            sys.exit(0)
+            
 def get_video_dev_by_name(src):
     """Find video device by name"""
     devices = glob.glob("/dev/video*")
@@ -394,7 +366,6 @@ def get_video_dev_by_name(src):
         for line in proc.stdout.splitlines():
             if src in line:
                 return dev
-
 def parse_args():
     """Parse command line arguments"""
     ap = argparse.ArgumentParser()
@@ -412,20 +383,20 @@ def parse_args():
     return ap.parse_args()
 
 def main():
-    """Main function"""
+    """Entry point"""
     # Initialize GStreamer
     Gst.init(None)
     
-    # Parse arguments
+    # Parse args
     args = parse_args()
     
     # Create and run pipeline
-    pipeline = BlazePoseNNStreamer(args)
+    pipeline = OptimizedBlazePose(args)
     
-    # Set up signal handler
+    # Set up signal handler for clean exit
     signal.signal(signal.SIGINT, lambda s, f: pipeline.stop())
     
-    # Start pipeline
+    # Start processing
     pipeline.start()
 
 if __name__ == "__main__":

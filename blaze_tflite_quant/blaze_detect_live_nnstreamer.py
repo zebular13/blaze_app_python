@@ -45,7 +45,7 @@ sys.path.append(os.path.abspath('../blaze_common/'))
 from blazedetector import BlazeDetector
 from blazelandmark import BlazeLandmark
 from visualization import draw_detections, draw_landmarks, draw_roi
-from visualization import POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
+from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
 
 # Constants
 SCALE = 1.0
@@ -118,8 +118,8 @@ class GstDisplay:
 class BlazePoseNNStreamer:
     def __init__(self, args):
         self.args = args
-        self.width = 320
-        self.height = 240
+        self.width = 640
+        self.height = 480
         self.pipeline = None
         self.display = None
         self.running = False
@@ -154,8 +154,8 @@ class BlazePoseNNStreamer:
         elif self.args.blaze == "face":
             self.detector_type = "blazeface"
             self.landmark_type = "blazefacelandmark"
-            default_detector = 'models/output/face_detection_short_range_pixabay_unsignedquant_vela.tflite'
-            default_landmark = 'models/output/face_landmark_pixabay_unsignedquant_vela.tflite'
+            default_detector= 'models/face_detection_short_range_pixabay1675_unsigned_uint8quant_vela.tflite'
+            default_landmark= 'models/face_landmark_pixabay1941_unsigned_uint8quant_vela.tflite'
         elif self.args.blaze == "pose":
             self.detector_type = "blazepose"
             self.landmark_type = "blazeposelandmark"
@@ -298,11 +298,16 @@ class BlazePoseNNStreamer:
             
             for i in range(len(flags)):
                 landmark, flag = landmarks[i], flags[i]
-                if self.landmark_type == "blazeposelandmark":
+                #if True: #flag>.5:
+                if self.landmark_type == "blazehandlandmark":
+                    draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
+                elif self.landmark_type == "blazefacelandmark":
+                    draw_landmarks(output, landmark[:,:2], FACE_CONNECTIONS, size=1)                                    
+                elif self.landmark_type == "blazeposelandmark":
                     if landmarks.shape[1] > 33:
                         draw_landmarks(output, landmark[:,:2], POSE_FULL_BODY_CONNECTIONS, size=2)
                     else:
-                        draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)
+                        draw_landmarks(output, landmark[:,:2], POSE_UPPER_BODY_CONNECTIONS, size=2)    
             
             draw_roi(output, roi_box)
             draw_detections(output, detections)
