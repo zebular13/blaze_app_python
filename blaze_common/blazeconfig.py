@@ -214,11 +214,11 @@ face_full_range_v0_10_model_config = {
     "num_keypoints": 6,
 
     "detection2roi_method": 'box',
-    "kp1": 1,
-    "kp2": 0,
-    "theta0": 0.,
+    "kp2": 3,
+    "theta0": 90 * np.pi / 180,
     "dscale": 1.5,
     "dy": 0.,
+    "dy": 0.5,
 }
 
 # reference : https://github.com/google/mediapipe/blob/v0.7.12/mediapipe/modules/pose_detection/pose_detection_gpu.pbtxt
@@ -276,7 +276,7 @@ pose_detect_v0_10_model_config = {
     "num_classes": 1,
     "num_anchors": 2254,
     "num_coords": 12,
-    "score_clipping_thresh": 10.0, #was 100. change for small hardware
+    "score_clipping_thresh": 100.0, #was 100. change for small hardware
     "x_scale": 224.0,
     "y_scale": 224.0,
     "h_scale": 224.0,

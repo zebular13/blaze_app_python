@@ -372,7 +372,7 @@ class BlazeDetectorBase(BlazeBase):
         if len(detections) == 0: 
            return []
         elif len(detections) > 3:
-            detections = detections[:3]
+            detections = detections[:3] # this slightly speeds up detection
 
         output_detections = []
 
