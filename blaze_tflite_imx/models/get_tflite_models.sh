@@ -95,3 +95,9 @@ wget https://github.com/zebular13/MediaPipeTfliteQuantization/raw/refs/heads/mai
 
 # pose_landmark_lite_quant.tflite
 wget https://github.com/zebular13/MediaPipeTfliteQuantization/raw/refs/heads/main/quantized_models/pose/pose_landmark_lite_quant.tflite
+
+# palm_detection_quant.tflite
+wget https://github.com/zebular13/MediaPipeTfliteQuantization/blob/main/quantized_models/hand/palm_detection_quant.tflite
+
+# hand_landmark_quant.tflite
+wget https://github.com/zebular13/MediaPipeTfliteQuantization/blob/main/quantized_models/hand/hand_landmark_quant.tflite
