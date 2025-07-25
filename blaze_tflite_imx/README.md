@@ -56,6 +56,6 @@ To learn how to convert models to vela, check out [Part 2: Accelerating AI on th
 ![MaaXBoardOSM93VelaConvert](https://github.com/user-attachments/assets/22518602-14f8-4cd9-ad77-4b8113f52895)
 
 
-Finally, learn how to convert your image pipeline to NNStreamer in [Part 3: Accelerating AI on the MaaXBoard OSM93 – NNStreamer] (https://www.hackster.io/monica/accelerating-ai-on-maaxboard-osm93-camera-pipeline-822c68)
+Finally, learn how to convert your image pipeline to NNStreamer in [Part 3: Accelerating AI on the MaaXBoard OSM93 – NNStreamer](https://www.hackster.io/monica/accelerating-ai-on-maaxboard-osm93-camera-pipeline-822c68)
 ![MaaXBoardOSM93-NNstreamer](https://github.com/user-attachments/assets/36d09101-051c-43ba-8ce0-01db4bc35ca7)
 
