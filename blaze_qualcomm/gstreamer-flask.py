@@ -1,10 +1,11 @@
+import os
 import subprocess
 import threading
-from flask import Flask, Response
+from flask import Flask, Response, render_template_string
 
 app = Flask(__name__)
 
-# GStreamer pipeline that outputs JPEG frames to stdout
+# Working pipeline with proper syntax
 PIPELINE = (
     "v4l2src device=/dev/video2 ! "
     "image/jpeg,width=640,height=480,framerate=30/1 ! "
@@ -16,90 +17,82 @@ PIPELINE = (
 )
 
 process = None
-running = False
 
-def start_gstreamer():
-    global process, running
-    running = True
-    try:
-        process = subprocess.Popen(
-            ["gst-launch-1.0", "-q"] + PIPELINE.split(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=0
-        )
-        print("GStreamer pipeline started")
-        while running:
-            if process.poll() is not None:
-                print("GStreamer process ended unexpectedly")
-                break
-    except Exception as e:
-        print(f"Error starting pipeline: {e}")
-    finally:
-        if process:
-            process.terminate()
-            process.wait()
+def start_pipeline():
+    global process
+    env = os.environ.copy()
+    env.update({'GST_DEBUG': '2'})
+    
+    process = subprocess.Popen(
+        ["gst-launch-1.0", "-v"] + PIPELINE.split(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        bufsize=0
+    )
+    threading.Thread(target=monitor_stderr, daemon=True).start()
+
+def monitor_stderr():
+    while True:
+        line = process.stderr.readline()
+        if line:
+            print("GSTERR:", line.decode().strip())
+        elif process.poll() is not None:
+            break
 
 def generate():
     while True:
-        if not process or process.poll() is not None:
+        if process.poll() is not None:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + 
-                   b'Camera not available' + b'\r\n')
+                   b'Pipeline not running' + b'\r\n')
             continue
             
-        # Read JPEG frame from stdout
-        # GST header is 16 bytes: [0xff, 0xd8, ..., 0xff, 0xd9]
-        # We'll read until we find the JPEG end marker
-        data = b''
-        while True:
-            chunk = process.stdout.read(1024)
-            if not chunk:
-                break
-            data += chunk
-            if b'\xff\xd9' in data:  # JPEG end marker
+        try:
+            # Read JPEG frame markers
+            header = process.stdout.read(2)
+            if header != b'\xff\xd8':
+                continue
+                
+            # Read until JPEG end marker
+            data = header
+            while b'\xff\xd9' not in data:
+                chunk = process.stdout.read(4096)
+                if not chunk:
+                    break
+                data += chunk
+            
+            if b'\xff\xd9' in data:
                 frame = data[:data.index(b'\xff\xd9')+2]
                 yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                break
+                       b'Content-Type: image/jpeg\r\n\r\n' + 
+                       frame + b'\r\n')
+        except Exception as e:
+            print("Frame error:", str(e))
 
 @app.route('/')
 def index():
-    return """
-    <html>
-    <head>
-        <title>Webcam Feed</title>
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; }
-            img { border: 1px solid #ccc; margin-top: 20px; }
-        </style>
-    </head>
-    <body>
-        <h1>Webcam Feed</h1>
-        <img src="/video_feed" width="640" height="480">
-    </body>
-    </html>
-    """
+    return render_template_string('''
+        <html>
+        <head><title>Camera Feed</title></head>
+        <body>
+            <h1>Camera Feed</h1>
+            <img src="{{ url_for('video_feed') }}">
+        </body>
+        </html>
+    ''')
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate(),
-                  mimetype='multipart/x-mixed-replace; boundary=frame')
-
-def cleanup():
-    global running
-    running = False
-    if process:
-        process.terminate()
-        process.wait()
+    return Response(
+        generate(),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
 
 if __name__ == '__main__':
+    start_pipeline()
     try:
-        # Start GStreamer in a separate thread
-        threading.Thread(target=start_gstreamer, daemon=True).start()
-        
-        # Start Flask app
-        print("Starting Flask server...")
         app.run(host='0.0.0.0', port=5000, threaded=True)
     finally:
-        cleanup()
+        if process:
+            process.terminate()
